@@ -1,0 +1,372 @@
+---
+title: ClickHouse
+description: Connect to ClickHouse databases with Conar. Learn about connection strings, ClickHouse-specific query handling, and supported features.
+icon: database
+---
+
+## Overview
+
+Conar provides beta support for ClickHouse, the high-performance columnar database. ClickHouse integration includes custom query compilation, parameter handling, and schema introspection.
+
+<Warning>
+  ClickHouse support in Conar is currently in **beta**. Some advanced features may have limitations.
+</Warning>
+
+## Connection String Format
+
+ClickHouse connections use HTTPS for secure communication:
+
+```text
+https://username:password@hostname:port/database
+```
+
+### Basic Connection
+
+<CodeGroup>
+
+```text Local ClickHouse
+https://default:@localhost:8123/default
+```
+
+```text Remote Server
+https://admin:password@clickhouse.example.com:8123/analytics
+```
+
+```text ClickHouse Cloud
+https://default:password@abc123.clickhouse.cloud:8443/default
+```
+
+```text With Custom Database
+https://user:pass@ch.example.com:8123/production
+```
+
+</CodeGroup>
+
+<Note>
+  ClickHouse typically uses port **8123** for HTTP/HTTPS connections and port **9000** for native protocol connections. Conar uses the HTTP interface (port 8123).
+</Note>
+
+## Connection Parameters
+
+### Standard Parameters
+
+| Parameter | Description | Default |
+|-----------|-------------|----------|
+| `host` | ClickHouse server hostname | `localhost` |
+| `port` | HTTP/HTTPS port | `8123` |
+| `database` | Database name | `default` |
+| `user` | Username for authentication | `default` |
+| `password` | Password for authentication | Empty string |
+
+### Protocol
+
+Conar uses HTTPS for ClickHouse connections. Always use `https://` as the protocol prefix.
+
+<CodeGroup>
+
+```text Secure Connection (Recommended)
+https://user:pass@clickhouse.example.com:8123/mydb
+```
+
+```text ClickHouse Cloud (Port 8443)
+https://default:password@xyz.clickhouse.cloud:8443/default
+```
+
+</CodeGroup>
+
+## ClickHouse-Specific Features
+
+### Custom Query Compilation
+
+Conar implements custom query handling for ClickHouse to ensure compatibility:
+
+#### Parameter Substitution
+
+ClickHouse doesn't support prepared statements in the traditional sense. Conar converts parameterized queries by:
+
+1. **NULL values**: Converted to `NULL`
+2. **Numbers**: Inserted directly as numeric values
+3. **Dates**: Wrapped in `parseDateTime64BestEffort('...')`
+4. **Strings**: Single-quoted and escaped
+5. **Objects/Arrays**: JSON stringified and quoted
+
+**Example transformation:**
+
+<CodeGroup>
+
+```typescript Input Query
+const query = db
+  .selectFrom('events')
+  .where('timestamp', '>', new Date('2024-01-01'))
+  .where('user_id', '=', 123)
+  .where('event_name', '=', 'page_view')
+```
+
+```sql Generated SQL
+SELECT * FROM events
+WHERE timestamp > parseDateTime64BestEffort('2024-01-01T00:00:00.000Z')
+  AND user_id = 123
+  AND event_name = 'page_view'
+```
+
+</CodeGroup>
+
+#### UPDATE Statement Conversion
+
+ClickHouse uses `ALTER TABLE ... UPDATE` instead of standard SQL `UPDATE`. Conar automatically converts:
+
+<CodeGroup>
+
+```sql Standard SQL (Input)
+UPDATE `database`.`table` SET column = 'value' WHERE id = 1
+```
+
+```sql ClickHouse SQL (Output)
+ALTER TABLE `database`.`table` UPDATE column = 'value' WHERE id = 1
+```
+
+</CodeGroup>
+
+### Schema Introspection
+
+Conar introspects ClickHouse databases using:
+
+- `system.tables` - Table information
+- `system.columns` - Column definitions and types
+- `system.databases` - Database list
+- `information_schema` views (when available)
+
+### Adapter Limitations
+
+ClickHouse has different capabilities compared to traditional RDBMS:
+
+| Feature | Supported | Notes |
+|---------|-----------|-------|
+| `CREATE IF NOT EXISTS` | No | ClickHouse handles this differently |
+| Transactional DDL | No | ClickHouse is not fully ACID |
+| `RETURNING` clause | No | Not supported in ClickHouse |
+| Transactions | Limited | Table-level atomicity only |
+
+<Info>
+  ClickHouse is optimized for analytical workloads (OLAP) rather than transactional workloads (OLTP). It excels at read-heavy operations on large datasets.
+</Info>
+
+## Data Types
+
+ClickHouse supports various data types. Here are common mappings:
+
+| ClickHouse Type | Description | Example |
+|-----------------|-------------|----------|
+| `Int8, Int16, Int32, Int64` | Signed integers | `42` |
+| `UInt8, UInt16, UInt32, UInt64` | Unsigned integers | `100` |
+| `Float32, Float64` | Floating point | `3.14` |
+| `String` | Variable-length string | `'hello'` |
+| `FixedString(N)` | Fixed-length string | `'fixed'` |
+| `Date` | Date (YYYY-MM-DD) | `'2024-01-01'` |
+| `DateTime` | Unix timestamp | `'2024-01-01 12:00:00'` |
+| `DateTime64` | High-precision timestamp | `'2024-01-01 12:00:00.000'` |
+| `UUID` | UUID type | `'123e4567-e89b-12d3-a456-426614174000'` |
+| `Array(T)` | Array of type T | `[1, 2, 3]` |
+| `Nullable(T)` | Nullable variant | `NULL` |
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Use HTTPS for Remote Connections" icon="shield-check">
+    Always use HTTPS when connecting to remote ClickHouse servers or ClickHouse Cloud.
+    
+    ```text
+    https://user:pass@clickhouse.example.com:8123/database
+    ```
+  </Accordion>
+
+  <Accordion title="Optimize for Batch Operations" icon="layer-group">
+    ClickHouse excels at batch inserts and analytical queries. Avoid single-row inserts when possible.
+    
+    <Tip>
+      Use batch inserts for better performance:
+      ```sql
+      INSERT INTO events (timestamp, user_id, event)
+      VALUES 
+        ('2024-01-01', 1, 'login'),
+        ('2024-01-01', 2, 'signup'),
+        ('2024-01-01', 3, 'view')
+      ```
+    </Tip>
+  </Accordion>
+
+  <Accordion title="Choose the Right Table Engine" icon="engine">
+    ClickHouse supports multiple table engines. MergeTree family engines are recommended for most use cases.
+    
+    - **MergeTree**: General purpose, sorted data
+    - **ReplacingMergeTree**: Deduplicate rows with the same primary key
+    - **SummingMergeTree**: Pre-aggregate numeric columns
+    - **AggregatingMergeTree**: Store intermediate aggregation states
+  </Accordion>
+
+  <Accordion title="Understand Data Immutability" icon="lock">
+    ClickHouse is designed for append-only workloads. UPDATE and DELETE operations are:
+    - Asynchronous (not immediate)
+    - Expensive (rewrite data)
+    - Not suitable for frequent modifications
+    
+    <Warning>
+      Avoid frequent UPDATEs and DELETEs in ClickHouse. Design your schema for append-only operations.
+    </Warning>
+  </Accordion>
+</AccordionGroup>
+
+## ClickHouse Cloud
+
+For ClickHouse Cloud connections:
+
+<CodeGroup>
+
+```text ClickHouse Cloud
+https://default:password@xyz.us-east-1.aws.clickhouse.cloud:8443/default
+```
+
+```text With Custom Database
+https://admin:password@abc.us-west-2.aws.clickhouse.cloud:8443/analytics
+```
+
+</CodeGroup>
+
+<Note>
+  ClickHouse Cloud uses port **8443** (HTTPS) instead of 8123. Ensure you're using the correct port from your cloud connection details.
+</Note>
+
+## Troubleshooting
+
+### Connection Refused
+
+<Steps>
+  <Step title="Verify ClickHouse is Running">
+    ```bash
+    # Check ClickHouse status
+    systemctl status clickhouse-server
+    
+    # Check HTTP interface
+    curl http://localhost:8123/ping
+    ```
+  </Step>
+  
+  <Step title="Check HTTP Interface Configuration">
+    Verify ClickHouse is configured to accept HTTP connections:
+    
+    ```xml
+    <!-- /etc/clickhouse-server/config.xml -->
+    <http_port>8123</http_port>
+    <https_port>8443</https_port>
+    ```
+  </Step>
+  
+  <Step title="Verify Firewall Rules">
+    Ensure port 8123 (or 8443 for HTTPS) is accessible:
+    ```bash
+    # Check if port is listening
+    netstat -an | grep 8123
+    ```
+  </Step>
+</Steps>
+
+### Authentication Failed
+
+<Steps>
+  <Step title="Verify User Exists">
+    ```sql
+    -- Check users
+    SELECT name FROM system.users;
+    
+    -- Create user if needed
+    CREATE USER myuser IDENTIFIED WITH sha256_password BY 'password';
+    ```
+  </Step>
+  
+  <Step title="Grant Permissions">
+    ```sql
+    -- Grant database access
+    GRANT SELECT, INSERT ON mydb.* TO myuser;
+    
+    -- Grant admin privileges
+    GRANT ALL ON *.* TO admin;
+    ```
+  </Step>
+</Steps>
+
+### Query Syntax Errors
+
+If you encounter syntax errors:
+
+1. **Check ClickHouse SQL dialect**: ClickHouse SQL differs from PostgreSQL/MySQL
+2. **Verify UPDATE syntax**: Use `ALTER TABLE ... UPDATE` not `UPDATE`
+3. **Check data type compatibility**: Some operations require specific ClickHouse types
+4. **Review function names**: ClickHouse function names may differ from other databases
+
+<Info>
+  Consult the [ClickHouse documentation](https://clickhouse.com/docs) for ClickHouse-specific SQL syntax and functions.
+</Info>
+
+### Performance Issues
+
+<Accordion title="Optimize Table Structure" icon="table">
+  - Choose appropriate primary key (ORDER BY clause)
+  - Use partitioning for large tables
+  - Consider using LowCardinality for string columns with few unique values
+  
+  ```sql
+  CREATE TABLE events (
+      timestamp DateTime,
+      user_id UInt32,
+      event LowCardinality(String),
+      properties String
+  ) ENGINE = MergeTree()
+  ORDER BY (timestamp, user_id)
+  PARTITION BY toYYYYMM(timestamp);
+  ```
+</Accordion>
+
+<Accordion title="Use Materialized Views" icon="eye">
+  Create materialized views for frequently accessed aggregations:
+  
+  ```sql
+  CREATE MATERIALIZED VIEW daily_stats
+  ENGINE = SummingMergeTree()
+  ORDER BY (date, user_id)
+  AS SELECT
+      toDate(timestamp) AS date,
+      user_id,
+      count() AS event_count
+  FROM events
+  GROUP BY date, user_id;
+  ```
+</Accordion>
+
+## Limitations
+
+<Warning>
+  Current limitations in Conar's ClickHouse support:
+  
+  - No transaction support (ClickHouse limitation)
+  - UPDATE/DELETE operations are asynchronous
+  - Some DDL operations may not work as expected
+  - Limited support for complex joins
+  - Beta feature - report issues via Discord
+</Warning>
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="PostgreSQL" icon="elephant" href="/databases/postgresql">
+    Learn about PostgreSQL connections
+  </Card>
+  <Card title="MySQL" icon="database" href="/databases/mysql">
+    Connect to MySQL databases
+  </Card>
+  <Card title="MSSQL" icon="database" href="/databases/mssql">
+    Microsoft SQL Server guide
+  </Card>
+  <Card title="ClickHouse Docs" icon="book" href="https://clickhouse.com/docs">
+    Official ClickHouse documentation
+  </Card>
+</CardGroup>

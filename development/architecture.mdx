@@ -1,0 +1,382 @@
+---
+title: Architecture
+description: Understanding Conar's monorepo structure and application architecture
+---
+
+Conar is built as a monorepo containing multiple applications and shared packages that work together to provide a seamless database management experience.
+
+## Monorepo Structure
+
+The project uses **pnpm workspaces** for monorepo management:
+
+```yaml
+# pnpm-workspace.yaml
+packages:
+  - packages/*
+  - apps/*
+```
+
+This structure enables:
+- **Code sharing** between apps and packages
+- **Consistent dependencies** via workspace catalog
+- **Parallel builds** with Turbo
+- **Type safety** across boundaries
+
+## Application Layer
+
+### Desktop App (`apps/desktop`)
+
+Electron-based desktop application for offline-first database management.
+
+**Key Technologies:**
+- Electron 39.2.6
+- Electron Vite for bundling
+- Electron Store for persistent settings
+- ToDesktop for builds and updates
+
+**Main Features:**
+- Native OS integration
+- Local database connections
+- SQL query editor with Monaco
+- Virtual table rendering
+
+**Package Dependencies:**
+```json
+{
+  "dependencies": {
+    "@clickhouse/client": "...",
+    "mssql": "...",
+    "mysql2": "...",
+    "pg": "..."
+  },
+  "devDependencies": {
+    "@conar/api": "workspace:*",
+    "@conar/connection": "workspace:*",
+    "@conar/shared": "workspace:*",
+    "@conar/table": "workspace:*",
+    "@conar/ui": "workspace:*"
+  }
+}
+```
+
+### Web App (`apps/web`)
+
+TanStack Start-based web application for cloud-based access.
+
+**Key Technologies:**
+- TanStack Start (SSR framework)
+- TanStack Router for routing
+- TanStack Query for data fetching
+- Nitro for server-side rendering
+
+**Main Features:**
+- Cloud-stored connections
+- Authentication with Better Auth
+- Real-time collaboration
+- Responsive UI
+
+**Package Dependencies:**
+```json
+{
+  "dependencies": {
+    "@tanstack/react-start": "...",
+    "@tanstack/react-query": "...",
+    "@orpc/client": "...",
+    "better-auth": "..."
+  },
+  "devDependencies": {
+    "@conar/api": "workspace:*",
+    "@conar/shared": "workspace:*",
+    "@conar/ui": "workspace:*"
+  }
+}
+```
+
+### API Server (`apps/api`)
+
+Hono-based API server handling database operations and authentication.
+
+**Key Technologies:**
+- Hono (lightweight web framework)
+- oRPC for type-safe endpoints
+- Drizzle ORM for database access
+- Better Auth for authentication
+- AI SDK for SQL assistance
+
+**Main Features:**
+- RESTful API endpoints
+- Database connection pooling
+- AI-powered query generation
+- User authentication
+- Stripe integration
+
+**Core Services:**
+```typescript
+// Connection handling
+import { parseConnectionString } from '@conar/connection'
+import { encrypt, decrypt } from '@conar/shared/utils/encryption'
+
+// AI integration
+import { anthropic } from '@ai-sdk/anthropic'
+import { openai } from '@ai-sdk/openai'
+import { google } from '@ai-sdk/google'
+```
+
+## Package Layer
+
+### Connection Package (`@conar/connection`)
+
+Handles database connection parsing and SSL configuration.
+
+**Exports:**
+```typescript
+// Main exports
+export { parseConnectionString, type Config } from './parse-connection-string'
+export { readSSLFiles, type BaseSSLConfig } from './read-ssl-files'
+
+// Database-specific SSL
+export * from './ssl/pg'      // PostgreSQL SSL
+export * from './ssl/mysql'   // MySQL SSL
+export * from './ssl/mssql'   // MSSQL SSL
+
+// Server-side only
+export * from './server'
+```
+
+**Key Functions:**
+- `parseConnectionString()`: Parse database URLs
+- `readSSLFiles()`: Load SSL certificates from filesystem
+
+[Learn more →](/development/packages/connection)
+
+### Shared Package (`@conar/shared`)
+
+Common utilities, types, and constants used across all apps.
+
+**Exports:**
+```typescript
+// Constants
+export * from './constants'
+
+// Encryption utilities
+export { encrypt, decrypt } from './utils/encryption'
+
+// Database enums
+export { ConnectionType } from './enums/connection-type'
+export { SyncType } from './enums/sync-type'
+
+// Filters
+export * from './filters'
+
+// Utilities
+export * from './utils/*'
+```
+
+**Key Features:**
+- AES-256-GCM encryption
+- Connection type enums
+- SQL filter definitions
+- Safe URL parsing
+
+[Learn more →](/development/packages/shared)
+
+### Table Package (`@conar/table`)
+
+High-performance virtualized table component for large datasets.
+
+**Exports:**
+```typescript
+export { TableProvider } from './provider'
+export { Table } from './table'
+export { TableHeader } from './header'
+export { TableBody } from './body'
+export { useTableContext } from './table-context'
+export { useShiftSelectionClick } from './use-shift-selection-click'
+export { useShiftSelectionKeyDown } from './use-shift-selection-key-down'
+```
+
+**Key Features:**
+- Virtual scrolling with TanStack Virtual
+- Custom column renderers
+- Shift-click selection
+- Dynamic column sizing
+
+[Learn more →](/development/packages/table)
+
+### UI Package (`@conar/ui`)
+
+React component library built on shadcn/ui and Radix UI.
+
+**Exports:**
+```typescript
+// Components
+export * from './components/button'
+export * from './components/input'
+export * from './components/dialog'
+// ... 50+ components
+
+// Hooks
+export { useToggle } from './hookas/use-toggle'
+export { useDebounced } from './hookas/use-debounced-callback'
+// ... 20+ hooks
+
+// Utilities
+export { cn } from './lib/utils'
+export { useTheme } from './use-theme'
+```
+
+**Key Features:**
+- Tailwind-based styling
+- Dark mode support
+- Accessible components
+- Custom hooks library
+
+[Learn more →](/development/packages/ui)
+
+## Data Flow
+
+Here's how data flows through the system:
+
+```mermaid
+graph TD
+    A[User Interface] -->|Action| B[React Query]
+    B -->|Request| C[oRPC Client]
+    C -->|HTTP| D[Hono API]
+    D -->|Decrypt| E[@conar/shared]
+    E -->|Parse| F[@conar/connection]
+    F -->|Query| G[Database]
+    G -->|Results| D
+    D -->|Encrypt| E
+    E -->|Response| C
+    C -->|Cache| B
+    B -->|Render| H[@conar/table]
+    H -->|Display| A
+```
+
+### Connection Flow
+
+1. **User Input**: User enters connection string
+2. **Encryption**: Connection string encrypted with user password
+3. **Storage**: Encrypted string stored in database (API) or electron-store (Desktop)
+4. **Decryption**: On use, string decrypted with password
+5. **Parsing**: `parseConnectionString()` extracts connection details
+6. **Connection**: Database driver establishes connection
+
+### Query Flow
+
+1. **Editor**: User writes SQL in Monaco editor
+2. **Execution**: Query sent to API via oRPC
+3. **Connection Pool**: API uses pooled connection
+4. **Database**: Query executed against database
+5. **Results**: Raw results returned
+6. **Rendering**: `@conar/table` virtualizes large result sets
+7. **Display**: User sees results in virtual table
+
+## Security Architecture
+
+### Encryption
+
+Connection strings are encrypted using AES-256-GCM:
+
+```typescript
+// packages/shared/src/utils/encryption.ts
+import * as crypto from 'node:crypto'
+
+const ALGORITHM = 'aes-256-gcm'
+const IV_LENGTH = 12
+const KEY_LENGTH = 32
+
+export function encrypt({ text, secret }: { text: string, secret: string }) {
+  const iv = crypto.randomBytes(IV_LENGTH)
+  const salt = crypto.randomBytes(SALT_LENGTH)
+  const key = crypto.pbkdf2Sync(secret, salt, 1, KEY_LENGTH, 'sha256')
+  // ... encryption logic
+}
+```
+
+### Authentication
+
+Better Auth provides:
+- Email/password authentication
+- OAuth providers
+- Session management
+- CSRF protection
+
+## Build System
+
+### Turbo Configuration
+
+Turbo orchestrates builds across the monorepo:
+
+```json
+{
+  "pipeline": {
+    "dev": {
+      "dependsOn": ["^build"],
+      "cache": false
+    },
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", ".next/**"]
+    },
+    "test:unit": {
+      "dependsOn": ["^build"]
+    }
+  }
+}
+```
+
+### TypeScript Configuration
+
+Project references ensure type safety:
+
+```json
+{
+  "references": [
+    { "path": "./packages/shared" },
+    { "path": "./packages/connection" },
+    { "path": "./packages/ui" },
+    { "path": "./packages/table" }
+  ]
+}
+```
+
+## Performance Optimizations
+
+### Virtual Scrolling
+
+`@conar/table` uses TanStack Virtual to render only visible rows:
+
+```typescript
+const { getVirtualItems: getVirtualRows } = useVirtualizer({
+  count: rows.length,
+  getScrollElement: () => scrollRef.current,
+  estimateSize: () => estimatedRowSize,
+  overscan: 10, // Render 10 extra rows for smooth scrolling
+})
+```
+
+### React Compiler
+
+Both web and desktop apps use the experimental React Compiler:
+
+```json
+{
+  "plugins": [["babel-plugin-react-compiler", {}]]
+}
+```
+
+### Code Splitting
+
+Vite automatically code-splits routes and heavy dependencies.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Testing" icon="flask" href="/development/testing">
+    Learn about testing strategies
+  </Card>
+  <Card title="Connection Package" icon="plug" href="/development/packages/connection">
+    Explore connection utilities
+  </Card>
+</CardGroup>

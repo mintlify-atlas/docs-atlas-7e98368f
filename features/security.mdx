@@ -1,0 +1,448 @@
+---
+title: Security
+description: Enterprise-grade encryption, secure credential storage, and data protection
+icon: shield-check
+---
+
+Security is a top priority in Conar. All sensitive data is encrypted, credentials are never stored in plaintext, and connections use industry-standard security protocols.
+
+## Encryption
+
+Conar uses military-grade encryption to protect your database credentials and sensitive information.
+
+### AES-256-GCM Encryption
+
+All connection strings and passwords are encrypted using **AES-256-GCM**:
+
+- **Algorithm**: AES (Advanced Encryption Standard) with 256-bit keys
+- **Mode**: GCM (Galois/Counter Mode) for authenticated encryption
+- **Key length**: 256 bits (32 bytes)
+- **IV length**: 12 bytes (96 bits)
+- **Salt length**: 16 bytes (128 bits)
+
+### Key Derivation
+
+Encryption keys are derived using **PBKDF2** (Password-Based Key Derivation Function 2):
+
+```typescript
+const key = crypto.pbkdf2Sync(
+  secret,      // Your master password
+  salt,        // Unique random salt
+  1,           // Iteration count
+  KEY_LENGTH,  // 32 bytes
+  'sha256'     // Hash algorithm
+)
+```
+
+<Note>
+Each encrypted value has its own unique salt, ensuring that identical values produce different ciphertext.
+</Note>
+
+### Encryption Implementation
+
+Here's how Conar encrypts your connection strings:
+
+```typescript
+// Simplified encryption flow
+function encrypt({ text, secret }) {
+  // Generate random IV and salt
+  const iv = crypto.randomBytes(12)
+  const salt = crypto.randomBytes(16)
+  
+  // Derive encryption key from secret
+  const key = crypto.pbkdf2Sync(secret, salt, 1, 32, 'sha256')
+  
+  // Create cipher and encrypt
+  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv)
+  const encrypted = Buffer.concat([
+    cipher.update(text, 'utf8'),
+    cipher.final(),
+    cipher.getAuthTag()  // Authentication tag for integrity
+  ])
+  
+  // Return as concatenated hex string
+  return `${iv.toString('hex')}.${encrypted.toString('hex')}.${salt.toString('hex')}`
+}
+```
+
+### Decryption Process
+
+```typescript
+function decrypt({ encryptedText, secret }) {
+  // Split encrypted string into components
+  const [ivHex, encryptedHex, saltHex] = encryptedText.split('.')
+  
+  // Convert from hex to buffers
+  const iv = Buffer.from(ivHex, 'hex')
+  const encrypted = Buffer.from(encryptedHex, 'hex')
+  const salt = Buffer.from(saltHex, 'hex')
+  
+  // Extract auth tag (last 16 bytes)
+  const authTag = encrypted.slice(-16)
+  const ciphertext = encrypted.slice(0, -16)
+  
+  // Derive same key using salt
+  const key = crypto.pbkdf2Sync(secret, salt, 1, 32, 'sha256')
+  
+  // Create decipher and decrypt
+  const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv)
+  decipher.setAuthTag(authTag)
+  
+  return Buffer.concat([
+    decipher.update(ciphertext),
+    decipher.final()
+  ]).toString('utf8')
+}
+```
+
+## What Gets Encrypted
+
+Conar encrypts the following sensitive data:
+
+### Database Credentials
+
+- **Connection strings** - Full connection URI including passwords
+- **Usernames** - Database user accounts
+- **Passwords** - Database passwords
+- **Host information** - Server addresses and ports
+
+### Stored Data
+
+- **Saved queries** - SQL queries saved for reuse
+- **API keys** - Keys for AI providers (if stored locally)
+- **Session tokens** - Authentication tokens
+
+<Warning>
+Plaintext credentials are NEVER stored on disk or in the database. Only encrypted versions are persisted.
+</Warning>
+
+## What is NOT Encrypted
+
+### Non-Sensitive Data
+
+These items are stored in plaintext for functionality:
+
+- **Connection names** - Your friendly names for connections
+- **Labels** - Connection labels (Production, Staging, etc.)
+- **Colors** - UI color preferences
+- **Database types** - PostgreSQL, MySQL, etc.
+- **Query history metadata** - Timestamps and row counts (not query text)
+
+### In-Memory Data
+
+Data in application memory is not encrypted:
+
+- **Active connections** - Currently open database connections
+- **Query results** - Data returned from queries
+- **Editor content** - SQL being written in the editor
+
+<Note>
+In-memory data is cleared when you close Conar or disconnect from a database.
+</Note>
+
+## Database Connection Security
+
+### SSL/TLS Encryption
+
+Conar supports encrypted database connections using SSL/TLS:
+
+<CodeGroup>
+
+```text PostgreSQL SSL
+postgresql://user:pass@host:5432/db?sslmode=require
+```
+
+```text MySQL SSL
+mysql://user:pass@host:3306/db?ssl={"rejectUnauthorized":true}
+```
+
+```text SQL Server Encryption
+mssql://user:pass@host:1433/db?encrypt=true
+```
+
+</CodeGroup>
+
+### SSL Certificate Support
+
+For databases requiring custom SSL certificates:
+
+```text
+postgresql://user:pass@host:5432/db?sslmode=verify-full&sslcert=/path/to/client.crt&sslkey=/path/to/client.key&sslrootcert=/path/to/ca.crt
+```
+
+Conar reads and validates:
+
+- **Client certificates** (`sslcert`) - Prove client identity
+- **Client keys** (`sslkey`) - Private key for client cert
+- **CA certificates** (`sslrootcert`) - Verify server identity
+
+### SSL Modes
+
+| Mode | Description | Security Level |
+|------|-------------|----------------|
+| `disable` | No SSL | ⚠️ Low - Unencrypted |
+| `require` | SSL required, no verification | 🟡 Medium - Encrypted but not authenticated |
+| `verify-ca` | Verify CA certificate | 🟢 High - Encrypted and server verified |
+| `verify-full` | Verify CA and hostname | ✅ Maximum - Full verification |
+
+<Tip>
+For production databases, always use `verify-full` to ensure both encryption and server authentication.
+</Tip>
+
+## Password Masking
+
+### UI Password Protection
+
+Passwords are masked in the Conar interface:
+
+1. **Connection list** - Passwords displayed as `••••••••`
+2. **Connection details** - Masked by default with toggle visibility
+3. **Copy operations** - Full string copied, but display remains masked
+
+### Toggle Password Visibility
+
+In the connection details view:
+
+1. Passwords are masked by default
+2. Click the **eye icon** to reveal
+3. Click again to re-mask
+4. Visibility state resets when navigating away
+
+```typescript
+// Password masking implementation
+const masked = showPassword 
+  ? password 
+  : '•'.repeat(password.length)
+```
+
+## Authentication & Authorization
+
+### User Authentication
+
+Conar uses secure authentication for user accounts:
+
+- **Better Auth** - Modern authentication library
+- **Session management** - Secure session tokens
+- **Password hashing** - Industry-standard bcrypt/argon2
+- **Token rotation** - Regular token refresh for security
+
+### Database Permissions
+
+Conar respects your database's permission model:
+
+- **User-level permissions** - Only queries your DB user can run
+- **Row-level security** - Honors database RLS policies
+- **Schema access** - Limited to schemas your user can access
+- **Read-only mode** - Option to connect with read-only privileges
+
+<Note>
+Conar never attempts to escalate privileges or bypass database security mechanisms.
+</Note>
+
+## Data Privacy
+
+### What Data Conar Collects
+
+#### Local Storage
+- Encrypted connection credentials
+- Saved queries and query history
+- User preferences and settings
+- Application state
+
+#### Cloud Storage (if sync enabled)
+- Encrypted connection information
+- Saved queries (encrypted)
+- User account information
+- Usage analytics (anonymized)
+
+### What Data Conar NEVER Collects
+
+- **Query results** - Your actual data stays private
+- **Database contents** - We never read or store your database data
+- **Plaintext passwords** - Only encrypted versions exist
+- **Personal data from your databases** - Your data is yours alone
+
+<Warning>
+When using AI features, query text and schema information are sent to AI providers (Anthropic, OpenAI, Google, XAI) to generate responses. See [AI Assistance](/features/ai-assistance#security--privacy) for details.
+</Warning>
+
+## Network Security
+
+### HTTPS Only
+
+All communication with Conar's servers uses HTTPS:
+
+- **TLS 1.2+** - Modern encryption protocols only
+- **Certificate pinning** - Prevents man-in-the-middle attacks
+- **Secure headers** - HSTS, CSP, and other security headers
+
+### Firewall Considerations
+
+Conar needs to connect to:
+
+1. **Your database servers** - Direct connection from your machine
+2. **Conar API** (if using cloud features) - For sync and AI
+3. **AI provider APIs** - When using AI assistance
+
+<Tip>
+Conar never proxies your database connections through our servers. Connections are direct from your machine to your database.
+</Tip>
+
+## Security Best Practices
+
+### For Database Administrators
+
+1. **Create dedicated users** - Don't use admin accounts with Conar
+2. **Limit permissions** - Grant only necessary privileges
+3. **Enable SSL/TLS** - Require encrypted connections
+4. **Use strong passwords** - Minimum 16 characters, mixed case, numbers, symbols
+5. **Rotate credentials** - Change passwords regularly
+6. **Monitor access logs** - Review who's connecting and when
+7. **IP whitelist** - Restrict connections to known IPs
+
+### For Developers
+
+1. **Never commit credentials** - Don't put connection strings in code
+2. **Use environment-specific connections** - Separate dev/staging/prod
+3. **Label production connections** - Make them visually distinct
+4. **Enable read-only when possible** - Reduce risk of accidental changes
+5. **Review dangerous queries** - Double-check DELETE/DROP/TRUNCATE
+6. **Keep Conar updated** - Install security patches promptly
+
+### For Teams
+
+1. **Share connection patterns, not credentials** - Document connection setup
+2. **Use team sync carefully** - Understand who can access shared connections
+3. **Audit connection access** - Know who has access to what
+4. **Implement least privilege** - Each team member gets minimal needed access
+5. **Offboard process** - Remove access when team members leave
+
+## Compliance
+
+### Data Residency
+
+When using cloud sync:
+
+- **Encryption at rest** - All data encrypted in cloud storage
+- **Encryption in transit** - TLS for all data transfers
+- **Geographic storage** - Data stored in your selected region
+- **Data sovereignty** - Compliance with local data laws
+
+### Security Standards
+
+Conar follows industry security standards:
+
+- **OWASP Top 10** - Protection against common vulnerabilities
+- **CWE/SANS Top 25** - Mitigation of dangerous software errors
+- **SOC 2** - Security controls for service organizations
+
+## Incident Response
+
+### If You Suspect a Security Issue
+
+1. **Change your database passwords immediately**
+2. **Revoke compromised credentials** in your database
+3. **Remove suspicious connections** from Conar
+4. **Review database access logs** for unauthorized access
+5. **Contact Conar security team** at security@conar.dev
+
+### Security Vulnerability Reporting
+
+Found a security vulnerability in Conar?
+
+1. **DO NOT** open a public GitHub issue
+2. **Email** security@conar.dev with details
+3. **Include** steps to reproduce if possible
+4. **Wait** for confirmation before public disclosure
+5. **Receive** credit in security advisories (if desired)
+
+## Security Updates
+
+Conar regularly releases security updates:
+
+### Update Notifications
+
+- Critical security patches auto-download
+- Security advisories posted on release notes
+- Email notifications for critical issues
+- In-app update prompts
+
+### Keeping Secure
+
+<AccordionGroup>
+  <Accordion title="Enable auto-updates">
+    1. Open Conar settings
+    2. Navigate to "Updates"
+    3. Enable "Automatically download and install updates"
+    4. Security patches install on restart
+  </Accordion>
+
+  <Accordion title="Check for updates manually">
+    1. Open Conar settings
+    2. Click "Check for updates"
+    3. If update available, click "Install"
+    4. Restart Conar to apply
+  </Accordion>
+
+  <Accordion title="Review security advisories">
+    Visit the security page:
+    - https://conar.dev/security
+    - GitHub security advisories
+    - Release notes for each version
+  </Accordion>
+</AccordionGroup>
+
+## Audit Logging
+
+Conar maintains audit logs for security events:
+
+### Logged Events
+
+- **Connection attempts** - Successful and failed
+- **Query execution** - What queries ran and when
+- **Authentication events** - Logins, logouts, token refreshes
+- **Settings changes** - Configuration modifications
+- **Data exports** - When results are exported
+
+### Accessing Logs
+
+1. Navigate to Settings → Security → Audit Logs
+2. Filter by date, event type, or connection
+3. Export logs for compliance reporting
+4. Logs retained for 90 days (configurable)
+
+<Note>
+Audit logs help you track all database activity for security and compliance purposes.
+</Note>
+
+## Frequently Asked Questions
+
+<AccordionGroup>
+  <Accordion title="Are my database passwords stored in the cloud?">
+    Only if you enable cloud sync. Passwords are always encrypted with AES-256-GCM before being stored anywhere - locally or in the cloud. We never have access to your plaintext passwords.
+  </Accordion>
+
+  <Accordion title="Can Conar see my database data?">
+    No. Conar runs entirely on your machine. Database connections are direct from your device to your database server. We never proxy connections or access your data.
+  </Accordion>
+
+  <Accordion title="What happens if I forget my master password?">
+    If you use a master password to encrypt local data and forget it, encrypted data cannot be recovered. This is by design - true encryption means we cannot decrypt your data without the password.
+  </Accordion>
+
+  <Accordion title="Is Conar SOC 2 compliant?">
+    Yes, Conar follows SOC 2 Type II security controls. Contact sales@conar.dev for our SOC 2 report.
+  </Accordion>
+
+  <Accordion title="Can I use Conar in a regulated industry?">
+    Yes. Conar's encryption and security features meet requirements for HIPAA, PCI-DSS, and other compliance frameworks. Contact our team to discuss your specific compliance needs.
+  </Accordion>
+
+  <Accordion title="How often should I rotate database credentials?">
+    We recommend rotating database passwords every 90 days for production databases. Update the connection string in Conar after rotating credentials in your database.
+  </Accordion>
+</AccordionGroup>
+
+<Tip>
+Security is an ongoing process. Regularly review your connections, update Conar to the latest version, and follow security best practices for database access.
+</Tip>

@@ -1,0 +1,377 @@
+---
+title: Microsoft SQL Server
+description: Connect to Microsoft SQL Server and Azure SQL databases with Conar. Learn about connection strings, encryption configuration, and MSSQL-specific features.
+icon: database
+---
+
+## Overview
+
+Conar provides full support for Microsoft SQL Server (MSSQL) including Azure SQL Database, with encryption support, custom query compilation, and comprehensive schema introspection.
+
+## Connection String Format
+
+Microsoft SQL Server connections use the SQL Server URL format:
+
+```text
+sqlserver://username:password@hostname:port/database?options
+```
+
+### Basic Connection
+
+<CodeGroup>
+
+```text Local SQL Server
+sqlserver://sa:YourPassword@localhost:1433/myapp
+```
+
+```text Remote Server
+sqlserver://admin:SecurePass123@sqlserver.example.com:1433/production
+```
+
+```text Azure SQL Database
+sqlserver://username@servername:Password123@servername.database.windows.net:1433/database
+```
+
+```text Named Instance
+sqlserver://sa:password@localhost:1433/database?instance=SQLEXPRESS
+```
+
+</CodeGroup>
+
+<Note>
+  You can also use the `mssql://` protocol prefix, which works identically to `sqlserver://`
+</Note>
+
+## Encryption Configuration
+
+Microsoft SQL Server supports connection encryption for secure data transmission.
+
+### Encryption Parameters
+
+| Parameter | Description | Default | Values |
+|-----------|-------------|---------|--------|
+| `encrypt` | Enable connection encryption | `true` | `true`, `false` |
+| `trustservercertificate` | Trust server certificate without validation | `true` | `true`, `false` |
+
+<Warning>
+  By default, MSSQL connections use encryption (`encrypt=true`) and trust the server certificate (`trustservercertificate=true`). For production, consider proper certificate validation.
+</Warning>
+
+### Encryption Examples
+
+<CodeGroup>
+
+```text Default (Encrypted, Trusted)
+sqlserver://user:pass@server.example.com:1433/database
+```
+
+```text Explicit Encryption
+sqlserver://user:pass@server.example.com:1433/database?encrypt=true
+```
+
+```text Disable Encryption (Not Recommended)
+sqlserver://user:pass@localhost:1433/database?encrypt=false
+```
+
+```text Encrypted with Certificate Validation
+sqlserver://user:pass@server.example.com:1433/database?encrypt=true&trustservercertificate=false
+```
+
+```text Local Development (No Encryption)
+sqlserver://sa:password@localhost:1433/mydb?encrypt=false&trustservercertificate=false
+```
+
+</CodeGroup>
+
+### Azure SQL Database
+
+Azure SQL Database requires encryption and specific connection settings:
+
+<CodeGroup>
+
+```text Azure SQL Database
+sqlserver://username@servername:Password@servername.database.windows.net:1433/database?encrypt=true
+```
+
+```text Azure with Active Directory
+sqlserver://username@servername:Password@servername.database.windows.net:1433/database?encrypt=true&authentication=ActiveDirectoryPassword
+```
+
+</CodeGroup>
+
+<Tip>
+  Azure SQL Database always requires encrypted connections. The `encrypt=true` parameter is mandatory.
+</Tip>
+
+## Supported Features
+
+Conar's MSSQL implementation uses a custom MssqlQueryCompiler with enhanced capabilities:
+
+### Custom Query Compiler
+
+Conar extends Kysely's MssqlQueryCompiler with improved `OFFSET` and `LIMIT` handling:
+
+**Standard OFFSET:**
+```sql
+SELECT * FROM users
+OFFSET 10 ROWS
+```
+
+**LIMIT with OFFSET:**
+```sql
+SELECT * FROM users
+OFFSET 10 ROWS
+FETCH NEXT 20 ROWS ONLY
+```
+
+**LIMIT without OFFSET:**
+```sql
+SELECT * FROM users
+OFFSET 0 ROWS
+FETCH NEXT 20 ROWS ONLY
+```
+
+<Note>
+  The custom compiler ensures proper SQL Server pagination syntax is generated for all offset and limit combinations.
+</Note>
+
+### Schema Introspection
+
+Conar introspects SQL Server databases using:
+
+- `information_schema.tables` - Tables and views
+- `information_schema.columns` - Column definitions
+- `information_schema.table_constraints` - Constraints
+- `sys.tables` - System table metadata
+- `sys.columns` - Detailed column information
+- `sys.indexes` - Index information
+
+### Transaction Support
+
+- `BEGIN TRANSACTION`, `COMMIT`, and `ROLLBACK`
+- Savepoints with `SAVE TRANSACTION`
+- Transaction isolation levels
+- Named transactions
+
+## Connection Parameters
+
+### Standard Parameters
+
+| Parameter | Description | Default |
+|-----------|-------------|----------|
+| `host` | Database server hostname | `localhost` |
+| `port` | Database server port | `1433` |
+| `database` | Database name | Required |
+| `user` | Username for authentication | Required |
+| `password` | Password for authentication | Required |
+
+### Advanced Parameters
+
+<CodeGroup>
+
+```text Request Timeout
+sqlserver://user:pass@server:1433/db?requestTimeout=30000
+```
+
+```text Connection Timeout
+sqlserver://user:pass@server:1433/db?connectionTimeout=15000
+```
+
+```text Application Name
+sqlserver://user:pass@server:1433/db?appName=Conar
+```
+
+```text Multiple Parameters
+sqlserver://user:pass@server:1433/db?encrypt=true&requestTimeout=30000&appName=Conar
+```
+
+</CodeGroup>
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Enable Encryption for Production" icon="shield-check">
+    Always use encryption for production databases and validate certificates when possible.
+    
+    ```text
+    sqlserver://user:pass@prod.example.com:1433/db?encrypt=true&trustservercertificate=false
+    ```
+  </Accordion>
+
+  <Accordion title="Use Strong Passwords" icon="key">
+    SQL Server authentication requires strong passwords. Use complex passwords with mixed case, numbers, and symbols.
+    
+    <Warning>
+      Passwords must meet SQL Server complexity requirements: minimum 8 characters, upper and lowercase letters, numbers, and symbols.
+    </Warning>
+  </Accordion>
+
+  <Accordion title="Set Appropriate Timeouts" icon="clock">
+    Configure connection and request timeouts based on your workload.
+    
+    ```text
+    sqlserver://user:pass@server:1433/db?connectionTimeout=15000&requestTimeout=30000
+    ```
+  </Accordion>
+
+  <Accordion title="Use Windows Authentication When Possible" icon="windows">
+    For on-premises SQL Server, Windows Authentication is more secure than SQL Server authentication.
+    
+    <Note>
+      Windows Authentication requires additional configuration and is not supported via connection strings. Use SQL Server authentication for Conar connections.
+    </Note>
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshooting
+
+### Connection Refused
+
+<Steps>
+  <Step title="Verify SQL Server is Running">
+    Check the SQL Server service status:
+    ```powershell
+    # Windows
+    Get-Service MSSQLSERVER
+    
+    # Or SQL Server Configuration Manager
+    ```
+  </Step>
+  
+  <Step title="Enable TCP/IP Protocol">
+    1. Open SQL Server Configuration Manager
+    2. Navigate to SQL Server Network Configuration → Protocols
+    3. Enable **TCP/IP** protocol
+    4. Restart SQL Server service
+  </Step>
+  
+  <Step title="Check Firewall Rules">
+    Ensure port 1433 is open:
+    ```powershell
+    # Windows Firewall
+    New-NetFirewallRule -DisplayName "SQL Server" -Direction Inbound -LocalPort 1433 -Protocol TCP -Action Allow
+    ```
+  </Step>
+  
+  <Step title="Verify SQL Server Browser">
+    For named instances, ensure SQL Server Browser service is running:
+    ```powershell
+    Get-Service SQLBrowser
+    Start-Service SQLBrowser
+    ```
+  </Step>
+</Steps>
+
+### Certificate Validation Errors
+
+If you see certificate errors:
+
+<CodeGroup>
+
+```text Development Workaround
+sqlserver://user:pass@localhost:1433/db?encrypt=true&trustservercertificate=true
+```
+
+```text Disable Encryption (Local Only)
+sqlserver://user:pass@localhost:1433/db?encrypt=false
+```
+
+</CodeGroup>
+
+<Warning>
+  Only use `trustservercertificate=true` or `encrypt=false` for development. Always validate certificates in production.
+</Warning>
+
+### Authentication Failed
+
+<Steps>
+  <Step title="Enable SQL Server Authentication">
+    SQL Server must be configured for Mixed Mode authentication:
+    
+    1. Open SQL Server Management Studio (SSMS)
+    2. Right-click server → Properties → Security
+    3. Select **SQL Server and Windows Authentication mode**
+    4. Restart SQL Server
+  </Step>
+  
+  <Step title="Verify Login Exists">
+    ```sql
+    -- Check if login exists
+    SELECT * FROM sys.server_principals WHERE name = 'username'
+    
+    -- Create login if needed
+    CREATE LOGIN username WITH PASSWORD = 'StrongPassword123!'
+    
+    -- Grant database access
+    USE mydb
+    CREATE USER username FOR LOGIN username
+    GRANT SELECT, INSERT, UPDATE, DELETE ON SCHEMA::dbo TO username
+    ```
+  </Step>
+  
+  <Step title="Check Password Policy">
+    Ensure your password meets SQL Server requirements:
+    - Minimum 8 characters
+    - Contains uppercase and lowercase letters
+    - Contains numbers
+    - Contains symbols
+  </Step>
+</Steps>
+
+### Azure SQL Connection Issues
+
+For Azure SQL Database:
+
+1. Verify firewall rules allow your IP address
+2. Ensure you're using the correct username format: `username@servername`
+3. Check that encryption is enabled: `encrypt=true`
+4. Verify the database exists and user has access
+
+<CodeGroup>
+
+```text Correct Azure Format
+sqlserver://myuser@myserver:Password123@myserver.database.windows.net:1433/mydb?encrypt=true
+```
+
+```text Incorrect (Missing @servername)
+sqlserver://myuser:Password123@myserver.database.windows.net:1433/mydb
+```
+
+</CodeGroup>
+
+## Named Instances
+
+For SQL Server named instances:
+
+<CodeGroup>
+
+```text Named Instance
+sqlserver://sa:password@localhost\SQLEXPRESS:1433/database
+```
+
+```text Named Instance with Custom Port
+sqlserver://sa:password@localhost\INSTANCE:49152/database
+```
+
+</CodeGroup>
+
+<Note>
+  Named instances often use dynamic ports. Check SQL Server Configuration Manager for the actual port number.
+</Note>
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="PostgreSQL" icon="elephant" href="/databases/postgresql">
+    Learn about PostgreSQL connections
+  </Card>
+  <Card title="MySQL" icon="database" href="/databases/mysql">
+    Connect to MySQL databases
+  </Card>
+  <Card title="ClickHouse" icon="database" href="/databases/clickhouse">
+    ClickHouse connection guide
+  </Card>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Getting started with Conar
+  </Card>
+</CardGroup>

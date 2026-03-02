@@ -1,0 +1,370 @@
+---
+title: MySQL
+description: Connect to MySQL and MariaDB databases with Conar. Learn about connection strings, SSL/TLS configuration, and MySQL-specific features.
+icon: database
+---
+
+## Overview
+
+Conar provides full support for MySQL and MariaDB databases with SSL/TLS security, query compilation using Kysely's MysqlQueryCompiler, and comprehensive schema introspection.
+
+## Connection String Format
+
+MySQL connections use the standard MySQL URL format:
+
+```text
+mysql://username:password@hostname:port/database?options
+```
+
+### Basic Connection
+
+<CodeGroup>
+
+```text Local Development
+mysql://root:password@localhost:3306/myapp
+```
+
+```text Remote Server
+mysql://admin:securepass@mysql.example.com:3306/production
+```
+
+```text MariaDB
+mysql://user:pass@mariadb.example.com:3306/database
+```
+
+```text With Charset
+mysql://user:pass@localhost:3306/db?charset=utf8mb4
+```
+
+</CodeGroup>
+
+<Note>
+  The same connection format works for both MySQL and MariaDB databases.
+</Note>
+
+## SSL/TLS Configuration
+
+MySQL connections support comprehensive SSL/TLS configuration for secure database communications.
+
+### Enabling SSL
+
+Use the `ssl` parameter to control SSL behavior:
+
+<CodeGroup>
+
+```text Enable SSL
+mysql://user:pass@mysql.example.com:3306/db?ssl=true
+```
+
+```text Enable SSL (Alternative)
+mysql://user:pass@mysql.example.com:3306/db?ssl=1
+```
+
+```text Disable SSL
+mysql://user:pass@localhost:3306/db?ssl=false
+```
+
+```text Disable SSL (Alternative)
+mysql://user:pass@localhost:3306/db?ssl=0
+```
+
+</CodeGroup>
+
+<Note>
+  The `ssl` parameter accepts: `true`, `false`, `1`, or `0` (case-insensitive)
+</Note>
+
+### SSL Certificate Parameters
+
+For advanced SSL configurations with custom certificates:
+
+| Parameter | Description | Example |
+|-----------|-------------|----------|
+| `sslca` | Certificate Authority (CA) certificate | `/path/to/ca.pem` |
+| `sslcert` | Client certificate file | `/path/to/client-cert.pem` |
+| `sslkey` | Client private key file | `/path/to/client-key.pem` |
+| `sslpassphrase` | Password for encrypted private key | `keypassword` |
+| `sslpassword` | Alias for `sslpassphrase` | `keypassword` |
+| `sslrejectunauthorized` | Reject unauthorized certificates | `true` or `false` |
+| `sslciphers` | Allowed cipher suites | `ECDHE-RSA-AES128-GCM-SHA256` |
+| `sslminversion` | Minimum TLS version | `TLSv1.2` |
+| `sslmaxversion` | Maximum TLS version | `TLSv1.3` |
+| `sslpfx` | PFX or PKCS12 encoded certificate | `/path/to/cert.pfx` |
+
+### SSL Configuration Examples
+
+<CodeGroup>
+
+```text Basic SSL
+mysql://user:pass@mysql.example.com:3306/db?ssl=true
+```
+
+```text With CA Certificate
+mysql://user:pass@mysql.example.com:3306/db?ssl=true&sslca=/path/to/ca.pem
+```
+
+```text Mutual TLS (mTLS)
+mysql://user:pass@mysql.example.com:3306/db?ssl=true&sslca=/path/to/ca.pem&sslcert=/path/to/client-cert.pem&sslkey=/path/to/client-key.pem
+```
+
+```text With Encrypted Key
+mysql://user:pass@mysql.example.com:3306/db?ssl=true&sslcert=/path/to/cert.pem&sslkey=/path/to/key.pem&sslpassphrase=keypassword
+```
+
+```text Self-Signed Certificate
+mysql://user:pass@mysql.example.com:3306/db?ssl=true&sslrejectunauthorized=false
+```
+
+```text Specific TLS Version
+mysql://user:pass@mysql.example.com:3306/db?ssl=true&sslminversion=TLSv1.2&sslmaxversion=TLSv1.3
+```
+
+```text AWS RDS MySQL
+mysql://user:pass@mydb.us-east-1.rds.amazonaws.com:3306/database?ssl=true&sslca=/path/to/rds-ca.pem
+```
+
+</CodeGroup>
+
+<Warning>
+  You cannot use `ssl=false` with SSL certificate parameters. This will result in an error.
+</Warning>
+
+### Certificate Verification
+
+Control SSL certificate verification with `sslrejectunauthorized`:
+
+<CodeGroup>
+
+```text Strict Verification (Production)
+mysql://user:pass@mysql.example.com:3306/db?ssl=true&sslrejectunauthorized=true
+```
+
+```text Skip Verification (Development)
+mysql://user:pass@mysql.example.com:3306/db?ssl=true&sslrejectunauthorized=false
+```
+
+</CodeGroup>
+
+<Tip>
+  Use `sslrejectunauthorized=false` only for development or when using self-signed certificates. Always verify certificates in production.
+</Tip>
+
+## Supported Features
+
+Conar's MySQL implementation uses Kysely's MysqlDialect with the following capabilities:
+
+### Query Compilation
+
+- **MysqlQueryCompiler**: Converts Kysely queries to MySQL-compatible SQL
+- **MysqlAdapter**: Provides MySQL-specific database operations
+- Full support for MySQL syntax and dialect features
+
+### Schema Introspection
+
+Conar introspects MySQL databases using:
+
+- `information_schema.tables` - Table and view information
+- `information_schema.columns` - Column definitions and data types
+- `information_schema.table_constraints` - Constraints and keys
+- `information_schema.key_column_usage` - Key relationships
+- `performance_schema` - Performance metrics and monitoring
+
+### Transaction Support
+
+- `START TRANSACTION`, `COMMIT`, and `ROLLBACK`
+- Savepoints with `SAVEPOINT` and `ROLLBACK TO SAVEPOINT`
+- Transaction isolation levels (`READ UNCOMMITTED`, `READ COMMITTED`, `REPEATABLE READ`, `SERIALIZABLE`)
+
+## Connection Parameters
+
+### Standard Parameters
+
+| Parameter | Description | Default |
+|-----------|-------------|----------|
+| `host` | Database server hostname | `localhost` |
+| `port` | Database server port | `3306` |
+| `database` | Database name | Required |
+| `user` | Username for authentication | Required |
+| `password` | Password for authentication | Required |
+
+### Common Query Parameters
+
+<CodeGroup>
+
+```text Character Set
+mysql://user:pass@localhost:3306/db?charset=utf8mb4
+```
+
+```text Timezone
+mysql://user:pass@localhost:3306/db?timezone=UTC
+```
+
+```text Connection Timeout
+mysql://user:pass@localhost:3306/db?connectTimeout=10000
+```
+
+```text Multiple Parameters
+mysql://user:pass@localhost:3306/db?charset=utf8mb4&timezone=UTC&ssl=true
+```
+
+</CodeGroup>
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Use SSL for Remote Connections" icon="shield-check">
+    Always enable SSL when connecting to remote MySQL servers or managed database services.
+    
+    ```text
+    mysql://user:pass@mysql.example.com:3306/db?ssl=true
+    ```
+  </Accordion>
+
+  <Accordion title="Use UTF-8 Character Set" icon="font">
+    Specify `utf8mb4` charset for full Unicode support, including emojis.
+    
+    ```text
+    mysql://user:pass@localhost:3306/db?charset=utf8mb4
+    ```
+  </Accordion>
+
+  <Accordion title="Set Connection Timeouts" icon="clock">
+    Prevent hanging connections with appropriate timeout values.
+    
+    ```text
+    mysql://user:pass@mysql.example.com:3306/db?connectTimeout=10000
+    ```
+  </Accordion>
+
+  <Accordion title="Verify Certificates in Production" icon="certificate">
+    Use `sslrejectunauthorized=true` and proper CA certificates for production databases.
+    
+    ```text
+    mysql://user:pass@mysql.example.com:3306/db?ssl=true&sslrejectunauthorized=true&sslca=/path/to/ca.pem
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshooting
+
+### Connection Refused
+
+<Steps>
+  <Step title="Check MySQL is Running">
+    ```bash
+    # Check MySQL status
+    systemctl status mysql
+    # or
+    systemctl status mariadb
+    
+    # Test connection
+    mysqladmin -h localhost -P 3306 ping
+    ```
+  </Step>
+  
+  <Step title="Verify Bind Address">
+    Check MySQL configuration (`my.cnf` or `my.ini`):
+    ```ini
+    [mysqld]
+    bind-address = 0.0.0.0
+    port = 3306
+    ```
+    
+    Restart MySQL after changes:
+    ```bash
+    systemctl restart mysql
+    ```
+  </Step>
+  
+  <Step title="Check Firewall">
+    Ensure port 3306 is accessible:
+    ```bash
+    # Check if port is listening
+    netstat -an | grep 3306
+    ```
+  </Step>
+</Steps>
+
+### SSL Connection Errors
+
+<Warning>
+  If you encounter SSL errors with self-signed certificates, use `sslrejectunauthorized=false` for development only.
+</Warning>
+
+```text Development Workaround
+mysql://user:pass@localhost:3306/db?ssl=true&sslrejectunauthorized=false
+```
+
+### Authentication Failed
+
+<Steps>
+  <Step title="Verify Credentials">
+    Test login with MySQL client:
+    ```bash
+    mysql -h hostname -P 3306 -u username -p
+    ```
+  </Step>
+  
+  <Step title="Check User Permissions">
+    Ensure the user has access from your host:
+    ```sql
+    -- View user hosts
+    SELECT user, host FROM mysql.user;
+    
+    -- Grant access from specific host
+    GRANT ALL PRIVILEGES ON database.* TO 'user'@'%' IDENTIFIED BY 'password';
+    FLUSH PRIVILEGES;
+    ```
+  </Step>
+</Steps>
+
+### Character Encoding Issues
+
+If you see garbled text or encoding errors:
+
+```text
+mysql://user:pass@localhost:3306/db?charset=utf8mb4
+```
+
+Also verify your table and database charset:
+
+```sql
+-- Check database charset
+SHOW VARIABLES LIKE 'character_set%';
+
+-- Set database charset
+ALTER DATABASE mydb CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+```
+
+## MariaDB Compatibility
+
+Conar fully supports MariaDB databases using the same MySQL connection string format. MariaDB-specific features are automatically detected and supported.
+
+<CodeGroup>
+
+```text MariaDB Local
+mysql://root:password@localhost:3306/mydb
+```
+
+```text MariaDB Remote
+mysql://user:pass@mariadb.example.com:3306/database?ssl=true
+```
+
+</CodeGroup>
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="PostgreSQL" icon="elephant" href="/databases/postgresql">
+    Learn about PostgreSQL connections
+  </Card>
+  <Card title="MSSQL" icon="database" href="/databases/mssql">
+    Connect to Microsoft SQL Server
+  </Card>
+  <Card title="ClickHouse" icon="database" href="/databases/clickhouse">
+    ClickHouse connection guide
+  </Card>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Getting started with Conar
+  </Card>
+</CardGroup>

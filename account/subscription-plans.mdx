@@ -1,0 +1,160 @@
+---
+title: 'Subscription Plans'
+description: 'Learn about Conar subscription plans, pricing, and billing options'
+---
+
+## Overview
+
+Conar offers a Pro subscription plan with flexible billing options to suit your needs. All subscriptions include a 7-day free trial to help you get started.
+
+## Pro Plan
+
+The Pro plan unlocks advanced features and capabilities for power users and teams.
+
+<CardGroup cols={2}>
+  <Card title="Monthly Billing" icon="calendar">
+    Billed monthly for maximum flexibility
+    
+    - 7-day free trial
+    - Cancel anytime
+    - Monthly invoicing
+  </Card>
+  
+  <Card title="Annual Billing" icon="calendar-check">
+    Best value with annual commitment
+    
+    - 7-day free trial
+    - Save with annual pricing
+    - Single yearly invoice
+  </Card>
+</CardGroup>
+
+## Free Trial
+
+All new Pro subscriptions include a **7-day free trial** period:
+
+- Full access to Pro features during trial
+- No credit card required upfront for trial start
+- Automatic conversion to paid subscription after trial ends
+- Cancel anytime during trial with no charges
+
+## Subscription Management
+
+### Upgrading to Pro
+
+To upgrade your account to Pro:
+
+1. Navigate to your account settings
+2. Select "Upgrade to Pro"
+3. Choose monthly or annual billing
+4. Complete the checkout process
+5. Your trial begins immediately
+
+### Managing Your Subscription
+
+You can manage your subscription through the Stripe billing portal:
+
+- Update payment methods
+- View invoice history
+- Change billing frequency
+- Cancel subscription
+
+<Note>
+The billing portal provides secure access to all your subscription and payment information.
+</Note>
+
+## Subscription Lifecycle
+
+### Active Subscription
+
+When your subscription is active:
+
+- **Status**: `active`
+- Full access to Pro features
+- Automatic renewal at end of billing period
+- Billing period start and end dates tracked
+
+### Trial Period
+
+During your free trial:
+
+- **Status**: `trialing` or `active`
+- Trial start and end dates recorded
+- Full Pro feature access
+- Converts to paid subscription when trial ends
+
+### Cancellation
+
+When you cancel a subscription:
+
+- Access continues until end of billing period
+- No automatic renewal
+- `cancelAtPeriodEnd` flag set to `true`
+- Cancel date tracked for reference
+
+<Warning>
+Cancelled subscriptions remain active until the end of your paid period. You won't be charged for subsequent periods.
+</Warning>
+
+## Billing Details
+
+### Payment Processing
+
+Conar uses Stripe for secure payment processing:
+
+- Industry-standard security
+- PCI DSS compliant
+- Support for major credit cards
+- Automatic invoice generation
+
+### Invoicing
+
+You'll receive invoices:
+
+- At the start of each billing period
+- After trial period ends
+- Via email to your registered address
+- Accessible through the billing portal
+
+### Subscription Status
+
+Your subscription can have the following statuses:
+
+- `active` - Subscription is active and in good standing
+- `trialing` - Currently in free trial period
+- `incomplete` - Payment information needed
+- `past_due` - Payment failed, needs attention
+- `canceled` - Subscription has been cancelled
+- `unpaid` - Payment attempts failed
+
+## FAQs
+
+<AccordionGroup>
+  <Accordion title="Can I switch between monthly and annual billing?">
+    Yes, you can change your billing frequency through the billing portal. Changes take effect at the end of your current billing period.
+  </Accordion>
+  
+  <Accordion title="What happens when my trial ends?">
+    Your subscription automatically converts to a paid subscription using your chosen billing frequency. You'll be charged at the end of the trial period.
+  </Accordion>
+  
+  <Accordion title="Can I cancel my subscription anytime?">
+    Yes, you can cancel your subscription at any time. You'll retain access until the end of your current billing period.
+  </Accordion>
+  
+  <Accordion title="How do I access my invoices?">
+    All invoices are available through the Stripe billing portal, accessible from your account settings.
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="lock" href="/account/authentication">
+    Learn about authentication methods and account security
+  </Card>
+  
+  <Card title="Security" icon="shield" href="/account/security">
+    Best practices for securing your Conar account
+  </Card>
+</CardGroup>

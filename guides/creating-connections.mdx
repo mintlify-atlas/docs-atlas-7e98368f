@@ -1,0 +1,162 @@
+---
+title: Creating Connections
+description: Learn how to create and configure database connections in Conar
+---
+
+Conar supports multiple database types including PostgreSQL, MySQL, Microsoft SQL Server, and ClickHouse. This guide walks you through creating a new database connection.
+
+## Supported Databases
+
+Conar supports the following database types:
+
+- **PostgreSQL** - Full support for PostgreSQL databases
+- **MySQL** - Full support for MySQL databases
+- **Microsoft SQL Server** - Full support for MSSQL databases
+- **ClickHouse** - Beta support for ClickHouse databases
+
+## Creating a Connection
+
+<Steps>
+  <Step title="Select Database Type">
+    Choose the type of database you want to connect to. This determines the connection string format and available features.
+  </Step>
+
+  <Step title="Enter Connection String">
+    Provide your database connection string. The format varies by database type:
+
+    **PostgreSQL Example:**
+    ```
+    postgresql://username:password@host:5432/database
+    ```
+
+    **MySQL Example:**
+    ```
+    mysql://username:password@host:3306/database
+    ```
+
+    **Microsoft SQL Server Example:**
+    ```
+    mssql://username:password@host:1433/database
+    ```
+
+    **ClickHouse Example:**
+    ```
+    clickhouse://username:password@host:8123/database
+    ```
+  </Step>
+
+  <Step title="Test Connection">
+    Click "Test connection" to verify that Conar can successfully connect to your database. The system will execute a simple query (`SELECT 1`) to validate the connection.
+
+    If the test fails, check:
+    - Connection string format and credentials
+    - Network accessibility to the database host
+    - Firewall rules and security groups
+    - SSL/TLS configuration if required
+  </Step>
+
+  <Step title="Configure Connection Details">
+    Once the connection test succeeds, configure the following:
+
+    **Name** (required)
+    - A descriptive name for your connection
+    - Click the refresh icon to generate a random name
+
+    **Label** (optional)
+    - Add a label like "Development", "Production", or "Staging"
+    - Helps organize connections by environment or purpose
+
+    **Color** (optional)
+    - Select a color to visually identify the connection
+    - Makes it easier to distinguish between multiple connections
+
+    **Password Sync**
+    - Enable to sync the password across all devices (encrypted in cloud)
+    - Disable to store the connection string without the password
+  </Step>
+
+  <Step title="Save Connection">
+    Click "Save connection" to create the connection. You'll be redirected to the database explorer where you can browse tables and run queries.
+  </Step>
+</Steps>
+
+## Sync Types
+
+Conar offers two sync options for your connections:
+
+### Cloud (with password)
+
+Syncs your complete connection string across all devices with password encryption. This allows you to access the connection from any device without re-entering credentials.
+
+**When to use:**
+- You want seamless access across multiple devices
+- You trust Conar's encryption for password storage
+- Convenience is more important than local-only storage
+
+### Cloud (without password)
+
+Syncs your connection string across devices but **does not store the password**. You'll need to re-enter the password when accessing the connection from a new device.
+
+**When to use:**
+- You want to sync connection metadata but not credentials
+- Company security policies require local-only password storage
+- You prefer manual password entry for sensitive databases
+
+## Connection String Parameters
+
+You can add various parameters to your connection string for advanced configuration. See [SSL Certificates](/guides/ssl-certificates) for SSL-related parameters.
+
+<Accordion title="Common Connection Parameters">
+  ### PostgreSQL Parameters
+  - `application_name` - Sets the application name
+  - `connect_timeout` - Connection timeout in seconds
+  - `options` - Additional runtime parameters
+
+  ### MySQL Parameters
+  - `charset` - Character set to use
+  - `timezone` - Timezone for the connection
+  - `connectTimeout` - Connection timeout in milliseconds
+
+  ### SQL Server Parameters
+  - `database` - Database name
+  - `requestTimeout` - Request timeout in milliseconds
+  - `connectionTimeout` - Connection timeout in milliseconds
+</Accordion>
+
+<Accordion title="Connection Testing Failed">
+  If your connection test fails, try the following:
+
+  1. **Verify credentials** - Double-check username and password
+  2. **Check host and port** - Ensure the host is accessible and the port is correct
+  3. **Network connectivity** - Test if you can reach the host (ping, telnet)
+  4. **Firewall rules** - Ensure your IP is whitelisted in database firewall
+  5. **SSL requirements** - Some databases require SSL connections
+  6. **Database permissions** - Verify the user has necessary permissions
+  7. **Connection string format** - Check for typos or incorrect syntax
+
+  For SSL-related issues, see [SSL Certificates](/guides/ssl-certificates).
+</Accordion>
+
+<Accordion title="Connection String Security">
+  ### How are connection strings stored?
+
+  Connection strings are encrypted before storage using industry-standard encryption:
+  - **With password sync**: Full connection string is encrypted and synced to cloud
+  - **Without password sync**: Password is removed before encryption and sync
+
+  ### Best Practices
+
+  - Use read-only database users when possible
+  - Create dedicated users for Conar instead of using admin accounts
+  - Rotate credentials regularly
+  - Use SSL/TLS connections for production databases
+  - Consider using connection pooling and timeouts
+</Accordion>
+
+## Next Steps
+
+After creating a connection:
+
+- Explore your database schema in the [Table Explorer](/guides/managing-queries#exploring-tables)
+- Use [AI Features](/guides/using-ai-features) to generate SQL queries
+- Save frequently used queries for quick access

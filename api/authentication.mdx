@@ -1,0 +1,290 @@
+---
+title: 'Authentication'
+description: 'Authenticate your API requests with Better Auth'
+---
+
+## Overview
+
+Conar uses [Better Auth](https://better-auth.com/) for authentication. All protected endpoints require a valid session cookie or bearer token.
+
+## Authentication Methods
+
+The API supports multiple authentication methods:
+
+### Session Cookies
+
+The primary authentication method uses HTTP-only cookies. After signing in through the Better Auth endpoints, subsequent requests automatically include the session cookie.
+
+### Bearer Tokens
+
+For programmatic access, you can use bearer tokens in the `Authorization` header:
+
+```bash
+POST /rpc/connections.list
+Authorization: Bearer YOUR_TOKEN_HERE
+Content-Type: application/json
+```
+
+## Auth Endpoints
+
+All authentication endpoints are available at `/auth/*`:
+
+```
+https://api.conar.app/auth/*
+```
+
+### Sign Up with Email
+
+<CodeGroup>
+```bash Request
+POST /auth/sign-up/email
+Content-Type: application/json
+
+{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "password": "securePassword123"
+}
+```
+
+```json Response
+{
+  "user": {
+    "id": "01932e8f-5f5e-7b8a-9f3d-4c5e6a7b8c9d",
+    "name": "John Doe",
+    "email": "john@example.com",
+    "emailVerified": false,
+    "createdAt": "2024-01-15T10:30:00.000Z"
+  },
+  "session": {
+    "id": "session_abc123",
+    "userId": "01932e8f-5f5e-7b8a-9f3d-4c5e6a7b8c9d",
+    "expiresAt": "2024-02-15T10:30:00.000Z"
+  }
+}
+```
+</CodeGroup>
+
+### Sign In with Email
+
+<CodeGroup>
+```bash Request
+POST /auth/sign-in/email
+Content-Type: application/json
+
+{
+  "email": "john@example.com",
+  "password": "securePassword123"
+}
+```
+
+```json Response
+{
+  "user": {
+    "id": "01932e8f-5f5e-7b8a-9f3d-4c5e6a7b8c9d",
+    "name": "John Doe",
+    "email": "john@example.com",
+    "emailVerified": false
+  },
+  "session": {
+    "id": "session_abc123",
+    "userId": "01932e8f-5f5e-7b8a-9f3d-4c5e6a7b8c9d",
+    "expiresAt": "2024-02-15T10:30:00.000Z"
+  }
+}
+```
+</CodeGroup>
+
+### Sign In with Google
+
+```bash
+GET /auth/sign-in/google
+```
+
+Redirects to Google OAuth flow.
+
+### Sign In with GitHub
+
+```bash
+GET /auth/sign-in/github
+```
+
+Redirects to GitHub OAuth flow.
+
+### Sign Out
+
+```bash
+POST /auth/sign-out
+```
+
+Invalidates the current session.
+
+### Get Session
+
+<CodeGroup>
+```bash Request
+GET /auth/get-session
+```
+
+```json Response
+{
+  "user": {
+    "id": "01932e8f-5f5e-7b8a-9f3d-4c5e6a7b8c9d",
+    "name": "John Doe",
+    "email": "john@example.com",
+    "emailVerified": false
+  },
+  "session": {
+    "id": "session_abc123",
+    "userId": "01932e8f-5f5e-7b8a-9f3d-4c5e6a7b8c9d",
+    "expiresAt": "2024-02-15T10:30:00.000Z",
+    "activeWorkspaceId": null
+  }
+}
+```
+</CodeGroup>
+
+### Password Reset
+
+<CodeGroup>
+```bash Request Password Reset
+POST /auth/forget-password
+Content-Type: application/json
+
+{
+  "email": "john@example.com"
+}
+```
+
+```bash Reset Password
+POST /auth/reset-password
+Content-Type: application/json
+
+{
+  "token": "reset_token_from_email",
+  "password": "newSecurePassword123"
+}
+```
+</CodeGroup>
+
+## Two-Factor Authentication
+
+Better Auth supports two-factor authentication (2FA) through the `twoFactor` plugin.
+
+### Enable 2FA
+
+```bash
+POST /auth/two-factor/enable
+```
+
+### Verify 2FA
+
+```bash
+POST /auth/two-factor/verify
+Content-Type: application/json
+
+{
+  "code": "123456"
+}
+```
+
+## Anonymous Authentication
+
+The API supports anonymous sessions through the `anonymous` plugin for temporary access.
+
+```bash
+POST /auth/sign-in/anonymous
+```
+
+## Session Management
+
+### Cookie Configuration
+
+- **Cookie Prefix**: Custom prefix defined by `AUTH_COOKIE_PREFIX`
+- **HTTP Only**: Yes
+- **Secure**: Yes (in production)
+- **SameSite**: Lax
+- **Cross-Subdomain**: Enabled in production
+
+### Session Lifecycle
+
+Sessions are automatically managed by Better Auth:
+
+1. Session created on successful authentication
+2. Session cookie sent with each request
+3. Session validated on protected endpoints
+4. Session expires based on inactivity or max age
+
+## Protected Endpoints
+
+Most API endpoints require authentication. The middleware checks for a valid session:
+
+```typescript
+// Example: authMiddleware validates session
+if (!session) {
+  throw new ORPCError('UNAUTHORIZED', {
+    message: 'We could not find your session. Please sign in again.'
+  })
+}
+```
+
+## Subscription Requirements
+
+Some endpoints require an active subscription in addition to authentication:
+
+- AI chat endpoints (`/rpc/ai.chat`)
+- Chat management (`/rpc/chats.create`, `/rpc/chats.update`)
+
+These endpoints use `requireSubscriptionMiddleware` and return a `FORBIDDEN` error if no active subscription is found:
+
+```json
+{
+  "error": {
+    "code": "FORBIDDEN",
+    "message": "To use this feature, a subscription is required. Please subscribe to a Pro plan to continue."
+  }
+}
+```
+
+## Error Responses
+
+### Unauthorized
+
+```json
+{
+  "error": {
+    "code": "UNAUTHORIZED",
+    "message": "We could not find your session. Please sign in again."
+  }
+}
+```
+
+### Forbidden (Subscription Required)
+
+```json
+{
+  "error": {
+    "code": "FORBIDDEN",
+    "message": "To use this feature, a subscription is required. Please subscribe to a Pro plan to continue."
+  }
+}
+```
+
+## Security Best Practices
+
+1. **Never expose credentials**: Store authentication credentials securely
+2. **Use HTTPS**: All API requests should be made over HTTPS
+3. **Rotate tokens**: Regularly rotate bearer tokens if using programmatic access
+4. **Monitor sessions**: Watch for unusual session activity
+5. **Enable 2FA**: Use two-factor authentication for additional security
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Connections API" icon="database" href="/api/connections">
+    Start managing database connections
+  </Card>
+  <Card title="Queries API" icon="code" href="/api/queries">
+    Work with saved queries
+  </Card>
+</CardGroup>

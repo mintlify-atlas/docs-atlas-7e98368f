@@ -1,0 +1,208 @@
+---
+title: Development Setup
+description: Get your local development environment up and running
+---
+
+This guide walks you through setting up Conar for local development.
+
+## Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+- **Node.js**: Version 18 or higher
+- **pnpm**: Version 10.30.3 or higher
+- **Bun**: Version 1.3.0 or higher (required for running scripts)
+- **Docker**: For running PostgreSQL and Redis locally
+
+## Installation Steps
+
+<Steps>
+  <Step title="Clone the Repository">
+    ```bash
+    git clone https://github.com/wannabespace/conar.git
+    cd conar
+    ```
+  </Step>
+
+  <Step title="Install Dependencies">
+    Install all workspace dependencies using pnpm:
+    
+    ```bash
+    pnpm install
+    ```
+    
+    This will:
+    - Install dependencies for all packages and apps
+    - Run the `prepare` script (Husky setup, version sync)
+    - Use the workspace catalog for consistent versions
+  </Step>
+
+  <Step title="Start Database Services">
+    Launch PostgreSQL and Redis using Docker Compose:
+    
+    ```bash
+    pnpm run docker:start
+    ```
+    
+    This starts:
+    - PostgreSQL database on port 5432
+    - Redis on port 6379
+    
+    To stop services later:
+    ```bash
+    pnpm run docker:stop
+    ```
+  </Step>
+
+  <Step title="Run Database Migrations">
+    Set up the database schema:
+    
+    ```bash
+    pnpm run drizzle:migrate
+    ```
+    
+    This applies all migrations to create the required tables.
+  </Step>
+
+  <Step title="Start Development Servers">
+    Launch all development servers using Turbo:
+    
+    ```bash
+    pnpm run dev
+    ```
+    
+    This starts:
+    - **Desktop app**: Electron app on port 3002
+    - **Web app**: TanStack Start on port 3001
+    - **API server**: Hono API on port 3000
+    
+    All servers support hot module replacement for instant updates.
+  </Step>
+</Steps>
+
+## Development Ports
+
+The project uses predefined ports for different environments:
+
+| Service | Development | Test |
+|---------|-------------|------|
+| API     | 3000        | 4000 |
+| Web     | 3001        | 4001 |
+| Desktop | 3002        | 4002 |
+
+These are defined in `packages/shared/src/constants.ts:18`:
+
+```typescript
+export const PORTS = {
+  DEV: {
+    API: 3000,
+    WEB: 3001,
+    DESKTOP: 3002,
+  },
+  TEST: {
+    API: 4000,
+    WEB: 4001,
+    DESKTOP: 4002,
+  },
+} as const
+```
+
+## Environment Configuration
+
+Create environment files for each app:
+
+### API (.env)
+```bash
+# apps/api/.env
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/conar"
+REDIS_URL="redis://localhost:6379"
+NODE_ENV="development"
+```
+
+### Web (.env)
+```bash
+# apps/web/.env
+VITE_API_URL="http://localhost:3000"
+```
+
+## Workspace Commands
+
+Key commands available from the root:
+
+```bash
+# Development
+pnpm run dev                 # Start all dev servers
+pnpm run start:api          # Start API only
+pnpm run start:web          # Start web only
+
+# Building
+pnpm run build:web          # Build web app
+pnpm run build:todesktop    # Build desktop app
+
+# Code Quality
+pnpm run lint               # Lint all packages
+pnpm run lint:fix           # Fix linting issues
+pnpm run check-types        # Type check all packages
+
+# Database
+pnpm run drizzle:generate   # Generate new migration
+pnpm run drizzle:migrate    # Run migrations
+
+# Dependencies
+pnpm run update             # Update dependencies
+```
+
+## Package-Specific Development
+
+You can also work on individual packages:
+
+```bash
+# Run tests in a specific package
+cd packages/connection
+bun test
+
+# Type check a specific package
+cd packages/ui
+pnpm run check-types
+```
+
+## Troubleshooting
+
+### Port Already in Use
+If you see "port already in use" errors, check if services are running:
+```bash
+lsof -i :3000  # Check API port
+lsof -i :3001  # Check web port
+lsof -i :3002  # Check desktop port
+```
+
+### Database Connection Issues
+Verify Docker services are running:
+```bash
+docker ps
+```
+
+Restart services if needed:
+```bash
+pnpm run docker:stop
+pnpm run docker:start
+```
+
+### Dependency Installation Failures
+Clear caches and reinstall:
+```bash
+rm -rf node_modules
+rm pnpm-lock.yaml
+pnpm install
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Architecture" icon="sitemap" href="/development/architecture">
+    Learn about the system architecture
+  </Card>
+  <Card title="Testing" icon="flask" href="/development/testing">
+    Run and write tests
+  </Card>
+</CardGroup>

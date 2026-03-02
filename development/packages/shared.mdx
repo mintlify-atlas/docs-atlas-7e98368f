@@ -1,0 +1,466 @@
+---
+title: Shared Package
+description: Common utilities, constants, and types used across all Conar applications
+---
+
+The `@conar/shared` package contains shared utilities, constants, enums, and helper functions used throughout the Conar monorepo.
+
+## Installation
+
+This package is internal to the monorepo:
+
+```json
+{
+  "dependencies": {
+    "@conar/shared": "workspace:*"
+  }
+}
+```
+
+## Package Structure
+
+```
+packages/shared/
+├── src/
+│   ├── constants.ts           # Application constants
+│   ├── arktype-config.ts      # ArkType configuration
+│   ├── enums/
+│   │   ├── connection-type.ts # Database connection types
+│   │   └── sync-type.ts       # Sync strategies
+│   ├── filters/
+│   │   ├── index.ts           # Filter exports
+│   │   ├── sql.ts             # SQL filter definitions
+│   │   └── types.ts           # Filter types
+│   └── utils/
+│       ├── encryption.ts      # AES-256-GCM encryption
+│       ├── safe-url.ts        # Safe URL parsing
+│       ├── connections.ts     # Connection helpers
+│       ├── helpers.ts         # General utilities
+│       ├── files.ts           # File operations
+│       ├── base64.ts          # Base64 encoding
+│       ├── challenge.ts       # Challenge generation
+│       └── ...
+└── package.json
+```
+
+## Exports
+
+The package provides granular exports:
+
+```typescript
+// Constants
+import { PORTS, SOCIAL_LINKS } from '@conar/shared/constants'
+
+// Encryption
+import { encrypt, decrypt } from '@conar/shared/encryption'
+
+// Enums
+import { ConnectionType } from '@conar/shared/enums/connection-type'
+import { SyncType } from '@conar/shared/enums/sync-type'
+
+// Filters
+import { SQL_FILTERS_LIST } from '@conar/shared/filters'
+
+// Utilities
+import { SafeURL } from '@conar/shared/utils/safe-url'
+import { createId } from '@conar/shared/utils/helpers'
+
+// ArkType config
+import '@conar/shared/arktype-config'
+```
+
+Defined in `package.json:5`:
+
+```json
+{
+  "exports": {
+    "./constants": "./src/constants.ts",
+    "./encryption": "./src/encryption.ts",
+    "./enums/*": "./src/enums/*.ts",
+    "./filters": "./src/filters/index.ts",
+    "./filters/*": "./src/filters/*.ts",
+    "./utils/*": "./src/utils/*.ts",
+    "./arktype-config": "./src/arktype-config.ts"
+  }
+}
+```
+
+## Constants
+
+### Application Constants
+
+From `packages/shared/src/constants.ts`:
+
+```typescript
+// Social links
+export const SOCIAL_LINKS = {
+  GITHUB: 'https://github.com/wannabespace/conar',
+  TWITTER: 'https://x.com/conar_app',
+  DISCORD: 'https://discord.gg/XweDPUVadR',
+} as const
+
+// GitHub repository
+export const GITHUB_REPO_OWNER = 'wannabespace' as const
+export const GITHUB_REPO_NAME = 'conar' as const
+
+// Contact
+export const SUPPORT_EMAIL = 'valerii.strilets@gmail.com'
+
+// Installation
+export const BREW_INSTALL_COMMAND = 'brew install --cask conar'
+
+// Authentication
+export const AUTH_COOKIE_PREFIX = 'conar' as const
+```
+
+### Port Configuration
+
+```typescript
+export const PORTS = {
+  DEV: {
+    API: 3000,
+    WEB: 3001,
+    DESKTOP: 3002,
+  },
+  TEST: {
+    API: 4000,
+    WEB: 4001,
+    DESKTOP: 4002,
+  },
+} as const
+
+// Usage
+import { PORTS } from '@conar/shared/constants'
+
+const apiUrl = `http://localhost:${PORTS.DEV.API}`
+```
+
+### UI Constants
+
+```typescript
+// Connection labels
+export const LABEL_OPTIONS = ['Local', 'Test', 'Dev', 'Staging', 'Prod']
+
+// Connection colors
+export const COLOR_OPTIONS = [
+  '#ef4444', // Red
+  '#f97316', // Orange
+  '#f59e0b', // Amber
+  '#16a34a', // Green
+  '#06b6d4', // Cyan
+  '#2563eb', // Blue
+  '#9333ea', // Purple
+  '#db2777', // Pink
+]
+```
+
+### Subscription Constants
+
+```typescript
+export const LATEST_VERSION_BEFORE_SUBSCRIPTION = 26 as const
+
+export const SUBSCRIPTION_PAST_DUE_MESSAGE = 
+  'We couldn\'t process your recent payment. Please update your payment method.'
+
+export const ACTIVE_SUBSCRIPTION_STATUSES = [
+  'active', 
+  'trialing', 
+  'past_due'
+] as const
+```
+
+## Encryption
+
+AES-256-GCM encryption for connection strings and sensitive data.
+
+### encrypt()
+
+```typescript
+function encrypt(params: { text: string; secret: string }): string
+```
+
+**Usage:**
+
+```typescript
+import { encrypt } from '@conar/shared/utils/encryption'
+
+const encrypted = encrypt({
+  text: 'postgresql://user:pass@localhost/db',
+  secret: 'user-password',
+})
+
+console.log(encrypted)
+// 'a1b2c3d4e5f6.9f8e7d6c5b4a.1a2b3c4d5e6f'
+```
+
+**Implementation:**
+
+From `packages/shared/src/utils/encryption.ts:9`:
+
+```typescript
+import { Buffer } from 'node:buffer'
+import * as crypto from 'node:crypto'
+
+const ALGORITHM = 'aes-256-gcm'
+const IV_LENGTH = 12
+const KEY_LENGTH = 32
+const SALT_LENGTH = 16
+
+export function encrypt({ text, secret }: { text: string, secret: string }) {
+  const iv = crypto.randomBytes(IV_LENGTH)
+  const salt = crypto.randomBytes(SALT_LENGTH)
+
+  const key = crypto.pbkdf2Sync(secret, salt, 1, KEY_LENGTH, 'sha256')
+
+  const cipher = crypto.createCipheriv(ALGORITHM, key, iv)
+  const encrypted = Buffer.concat([
+    cipher.update(text, 'utf8'),
+    cipher.final(),
+    cipher.getAuthTag(),
+  ])
+
+  return `${iv.toString('hex')}.${encrypted.toString('hex')}.${salt.toString('hex')}`
+}
+```
+
+### decrypt()
+
+```typescript
+function decrypt(params: { encryptedText: string; secret: string }): string
+```
+
+**Usage:**
+
+```typescript
+import { decrypt } from '@conar/shared/utils/encryption'
+
+try {
+  const decrypted = decrypt({
+    encryptedText: 'a1b2c3d4e5f6.9f8e7d6c5b4a.1a2b3c4d5e6f',
+    secret: 'user-password',
+  })
+  console.log(decrypted) // 'postgresql://user:pass@localhost/db'
+} catch (error) {
+  console.error('Decryption failed:', error.message)
+}
+```
+
+**Security Features:**
+
+- AES-256-GCM authenticated encryption
+- PBKDF2 key derivation (1 iteration for performance)
+- Random IV per encryption (prevents ciphertext reuse)
+- Random salt per encryption
+- Auth tag verification (prevents tampering)
+
+## Enums
+
+### ConnectionType
+
+Database connection types.
+
+From `packages/shared/src/enums/connection-type.ts:1`:
+
+```typescript
+export enum ConnectionType {
+  Postgres = 'postgres',
+  MySQL = 'mysql',
+  MSSQL = 'mssql',
+  ClickHouse = 'clickhouse',
+}
+
+export const connectionLabels: Record<ConnectionType, string> = {
+  [ConnectionType.Postgres]: 'PostgreSQL',
+  [ConnectionType.MySQL]: 'MySQL',
+  [ConnectionType.MSSQL]: 'Microsoft SQL Server',
+  [ConnectionType.ClickHouse]: 'ClickHouse (beta)',
+}
+```
+
+**Usage:**
+
+```typescript
+import { ConnectionType, connectionLabels } from '@conar/shared/enums/connection-type'
+
+function getConnectionLabel(type: ConnectionType): string {
+  return connectionLabels[type]
+}
+
+getConnectionLabel(ConnectionType.Postgres) // 'PostgreSQL'
+getConnectionLabel(ConnectionType.ClickHouse) // 'ClickHouse (beta)'
+```
+
+### Database-Specific Constants
+
+```typescript
+import { CONNECTION_TYPES_WITHOUT_SYSTEM_TABLES } from '@conar/shared/constants'
+
+// [ConnectionType.MSSQL]
+const showSystemTables = !CONNECTION_TYPES_WITHOUT_SYSTEM_TABLES.includes(
+  connection.type
+)
+```
+
+## Filters
+
+SQL filter definitions for building WHERE clauses.
+
+### SQL_FILTERS_GROUPED
+
+From `packages/shared/src/filters/sql.ts:3`:
+
+```typescript
+export const SQL_FILTERS_GROUPED = [
+  {
+    group: 'comparison',
+    filters: [
+      { label: 'Equal', operator: '=' },
+      { label: 'Not equal', operator: '!=' },
+      { label: 'Greater than', operator: '>' },
+      { label: 'Greater than or equal', operator: '>=' },
+      { label: 'Less than', operator: '<' },
+      { label: 'Less than or equal', operator: '<=' },
+    ],
+  },
+  {
+    group: 'text',
+    filters: [
+      { label: 'Like', operator: 'LIKE' },
+      { label: 'Ilike', operator: 'ILIKE' },
+      { label: 'Not like', operator: 'NOT LIKE' },
+    ],
+  },
+  {
+    group: 'list',
+    filters: [
+      { label: 'In', operator: 'IN', isArray: true },
+      { label: 'Not in', operator: 'NOT IN', isArray: true },
+    ],
+  },
+  {
+    group: 'null',
+    filters: [
+      { label: 'Is null', operator: 'IS NULL', hasValue: false },
+      { label: 'Is not null', operator: 'IS NOT NULL', hasValue: false },
+    ],
+  },
+] as const
+```
+
+### SQL_FILTERS_LIST
+
+```typescript
+export const SQL_FILTERS_LIST = SQL_FILTERS_GROUPED
+  .map(group => group.filters)
+  .flat()
+
+// Usage in UI
+import { SQL_FILTERS_LIST } from '@conar/shared/filters'
+
+<Select>
+  {SQL_FILTERS_LIST.map(filter => (
+    <Option key={filter.operator} value={filter.operator}>
+      {filter.label}
+    </Option>
+  ))}
+</Select>
+```
+
+## Utilities
+
+### SafeURL
+
+Safe URL parsing that handles connection strings with special characters.
+
+```typescript
+import { SafeURL } from '@conar/shared/utils/safe-url'
+
+const url = new SafeURL('postgresql://user:p@ss@localhost:5432/db')
+
+console.log(url.username) // 'user'
+console.log(url.password) // 'p@ss'
+console.log(url.hostname) // 'localhost'
+console.log(url.port)     // '5432'
+console.log(url.pathname) // '/db'
+```
+
+### createId()
+
+Generate unique IDs using nanoid:
+
+```typescript
+import { createId } from '@conar/shared/utils/helpers'
+
+const connectionId = createId() // 'V1StGXR8_Z5jdHi6B'
+const queryId = createId()      // 'Qx7eNq9_Hp2kR4wS'
+```
+
+### Base64 Encoding
+
+```typescript
+import { encode, decode } from '@conar/shared/utils/base64'
+
+const encoded = encode('Hello, World!')
+const decoded = decode(encoded)
+```
+
+## Testing
+
+Run package tests:
+
+```bash
+cd packages/shared
+pnpm run check-types
+```
+
+### Test Examples
+
+From `packages/shared/src/utils/encryption.test.ts`:
+
+```typescript
+import { describe, expect, test } from 'bun:test'
+import { decrypt, encrypt } from './encryption'
+
+describe('encryption', () => {
+  test('encrypts and decrypts correctly', () => {
+    const secret = 'test-secret'
+    const text = 'sensitive data'
+    
+    const encrypted = encrypt({ text, secret })
+    const decrypted = decrypt({ encryptedText: encrypted, secret })
+    
+    expect(decrypted).toBe(text)
+  })
+
+  test('generates unique ciphertexts', () => {
+    const encrypted1 = encrypt({ text: 'data', secret: 'secret' })
+    const encrypted2 = encrypt({ text: 'data', secret: 'secret' })
+    
+    expect(encrypted1).not.toBe(encrypted2)
+  })
+})
+```
+
+## Dependencies
+
+```json
+{
+  "dependencies": {
+    "@conar/configs": "workspace:*",
+    "arktype": "catalog:",
+    "drizzle-orm": "catalog:",
+    "nanoid": "catalog:"
+  }
+}
+```
+
+## Related Packages
+
+<CardGroup cols={2}>
+  <Card title="Connection Package" icon="plug" href="/development/packages/connection">
+    Uses encryption and SafeURL
+  </Card>
+  <Card title="UI Package" icon="palette" href="/development/packages/ui">
+    Uses constants and utilities
+  </Card>
+</CardGroup>

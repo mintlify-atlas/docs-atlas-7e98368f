@@ -1,0 +1,337 @@
+---
+title: Database Connections
+description: Connect to PostgreSQL, MySQL, SQL Server, and more with secure credential management
+icon: plug
+---
+
+Conar makes it easy to connect to multiple databases simultaneously. All connection credentials are encrypted and stored securely.
+
+## Supported Databases
+
+Conar supports the following database types:
+
+- **PostgreSQL** - Full support for PostgreSQL 9.6+
+- **MySQL** - MySQL 5.7+ and MariaDB
+- **SQL Server** - Microsoft SQL Server 2012+
+- **SQLite** - Local SQLite databases
+- And more database types
+
+## Creating a Connection
+
+### Step 1: Select Database Type
+
+1. Click **Create a new connection** from the home screen
+2. Select your database type from the available options
+3. Each database type shows its icon for easy identification
+
+### Step 2: Enter Connection String
+
+Provide your database connection string in the standard URI format:
+
+<CodeGroup>
+
+```text PostgreSQL
+postgresql://username:password@host:5432/database
+```
+
+```text MySQL
+mysql://username:password@host:3306/database
+```
+
+```text SQL Server
+mssql://username:password@host:1433/database
+```
+
+</CodeGroup>
+
+<Note>
+Connection strings are parsed automatically to extract:
+- Username
+- Password
+- Host
+- Port
+- Database name
+- Query parameters (SSL options, etc.)
+</Note>
+
+### Step 3: Configure Connection Details
+
+After entering your connection string, configure optional settings:
+
+- **Connection Name** - A friendly name to identify this connection
+- **Label** - Organize connections with labels (e.g., "Production", "Staging")
+- **Color** - Assign a color for visual identification
+- **Sync Type** - Choose how to sync this connection across devices
+
+### Step 4: Test & Save
+
+Conar automatically tests the connection before saving:
+
+1. Validates the connection string format
+2. Attempts to connect to the database
+3. Retrieves database version information
+4. Saves encrypted credentials if successful
+
+<Warning>
+If the connection test fails, verify:
+- Your credentials are correct
+- The database host is accessible from your network
+- Firewall rules allow the connection
+- SSL/TLS settings match your database configuration
+</Warning>
+
+## Connection String Format
+
+### Standard Format
+
+```text
+protocol://username:password@host:port/database?param1=value1&param2=value2
+```
+
+### Components
+
+| Component | Description | Required | Example |
+|-----------|-------------|----------|----------|
+| `protocol` | Database type | Yes | `postgresql`, `mysql`, `mssql` |
+| `username` | Database user | Yes | `admin`, `root` |
+| `password` | User password | No* | `mypassword123` |
+| `host` | Server address | Yes | `localhost`, `db.example.com` |
+| `port` | Server port | No** | `5432`, `3306`, `1433` |
+| `database` | Database name | No*** | `myapp`, `production` |
+| `params` | Query parameters | No | `sslmode=require` |
+
+<Note>
+\* Password is optional if your database uses alternative authentication  
+\*\* Port defaults to the standard port for each database type  
+\*\*\* Some databases allow connecting without specifying a database name
+</Note>
+
+### Connection String Examples
+
+<AccordionGroup>
+  <Accordion title="PostgreSQL with SSL">
+    ```text
+    postgresql://user:pass@localhost:5432/mydb?sslmode=require
+    ```
+  </Accordion>
+
+  <Accordion title="MySQL with charset">
+    ```text
+    mysql://user:pass@localhost:3306/mydb?charset=utf8mb4
+    ```
+  </Accordion>
+
+  <Accordion title="SQL Server with encryption">
+    ```text
+    mssql://user:pass@localhost:1433/mydb?encrypt=true
+    ```
+  </Accordion>
+
+  <Accordion title="Local PostgreSQL (no password)">
+    ```text
+    postgresql://postgres@localhost/mydb
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## SSL/TLS Configuration
+
+For secure connections, Conar supports SSL/TLS with custom certificates.
+
+### SSL Options
+
+Add SSL parameters to your connection string:
+
+```text
+postgresql://user:pass@host:5432/db?sslmode=require&sslcert=/path/to/client-cert.pem&sslkey=/path/to/client-key.pem&sslrootcert=/path/to/ca-cert.pem
+```
+
+### SSL Modes (PostgreSQL)
+
+- `disable` - No SSL connection
+- `require` - SSL required, no certificate verification
+- `verify-ca` - SSL required, verify CA certificate
+- `verify-full` - SSL required, verify CA and hostname
+
+<Tip>
+For production databases, use `verify-full` to ensure maximum security.
+</Tip>
+
+## Managing Connections
+
+### Connection List
+
+All your connections are displayed on the home screen with:
+
+- **Database icon** - Visual identifier for database type
+- **Connection name** - Your custom name
+- **Label badge** - If assigned (Production, Staging, etc.)
+- **Connection string** - Masked for security (passwords hidden)
+- **Database version** - Displayed at bottom-right
+- **Color indicator** - Left border in your chosen color
+
+### Last Opened Connections
+
+Frequently used connections appear in a separate "Last Opened" section for quick access.
+
+### Filtering by Label
+
+If you've assigned labels to connections:
+
+1. Click the **Tabs** at the top of the connection list
+2. Select a label to filter (e.g., "Production")
+3. Click **All** to show all connections
+
+## Connection Actions
+
+Each connection card provides quick actions:
+
+<AccordionGroup>
+  <Accordion title="Copy Connection String">
+    Click the **More** menu (three dots) → **Copy Connection String**
+    
+    The full connection string is copied to your clipboard for use in other tools.
+  </Accordion>
+
+  <Accordion title="Rename Connection">
+    Click the **More** menu → **Rename**
+    
+    Update the connection name, label, or color. Your credentials remain unchanged.
+  </Accordion>
+
+  <Accordion title="Remove Connection">
+    Click the **More** menu → **Remove**
+    
+    Permanently delete the connection. This action cannot be undone.
+    
+    <Warning>
+    Removing a connection also deletes:
+    - Saved queries for that connection
+    - Query history
+    - Local connection settings
+    </Warning>
+  </Accordion>
+</AccordionGroup>
+
+## Connection Security
+
+### Encryption
+
+All connection credentials are encrypted using **AES-256-GCM** encryption:
+
+- **Algorithm**: AES-256-GCM
+- **Key derivation**: PBKDF2 with SHA-256
+- **Unique salts**: Each encrypted value has a unique salt
+- **Authentication tags**: GCM mode provides built-in authentication
+
+```typescript
+// Encryption implementation
+const ALGORITHM = 'aes-256-gcm'
+const IV_LENGTH = 12
+const KEY_LENGTH = 32
+const SALT_LENGTH = 16
+```
+
+<Note>
+Connection strings are encrypted before being stored in the database. Only the encrypted version is saved - the plaintext is never persisted.
+</Note>
+
+### Password Masking
+
+In the UI, passwords are automatically masked:
+
+- **Connection list**: Passwords shown as dots (•••••••)
+- **Connection details**: Toggle visibility with the eye icon
+- **Copy actions**: Full credentials copied when needed
+
+### Security Best Practices
+
+1. **Use strong passwords** - Follow your organization's password policy
+2. **Enable SSL/TLS** - Always use encrypted connections for remote databases
+3. **Limit permissions** - Create database users with only the permissions needed
+4. **Rotate credentials** - Regularly update database passwords
+5. **Use labels** - Clearly identify production vs. staging connections
+
+## Connection Details
+
+Click any connection to view detailed information:
+
+| Field | Description |
+|-------|-------------|
+| Type | Database type (PostgreSQL, MySQL, etc.) |
+| User | Database username |
+| Password | Masked by default, click eye icon to reveal |
+| Host | Server hostname or IP address |
+| Port | Connection port |
+| Database | Database name |
+| Options | Additional connection parameters |
+
+## Sync Types
+
+When creating a connection, choose how it syncs:
+
+- **Local only** - Connection only exists on this device
+- **Cloud sync** - Connection syncs across all your devices
+- **Team sync** - Share connection with team members
+
+<Warning>
+When using cloud or team sync, ensure your organization's security policy allows storing encrypted credentials in the cloud.
+</Warning>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Connection timeout">
+    **Possible causes:**
+    - Database server is down or unreachable
+    - Firewall blocking the connection
+    - Incorrect host or port
+    
+    **Solutions:**
+    - Verify the database is running
+    - Check firewall rules
+    - Confirm host and port are correct
+    - Try connecting from the same network as the database
+  </Accordion>
+
+  <Accordion title="Authentication failed">
+    **Possible causes:**
+    - Incorrect username or password
+    - User doesn't have connection permissions
+    - Database requires additional authentication
+    
+    **Solutions:**
+    - Double-check credentials
+    - Verify user has CONNECT/LOGIN permissions
+    - Check if IP whitelist is required
+  </Accordion>
+
+  <Accordion title="SSL/TLS errors">
+    **Possible causes:**
+    - SSL mode mismatch
+    - Invalid or expired certificates
+    - Certificate path incorrect
+    
+    **Solutions:**
+    - Verify SSL mode matches database requirements
+    - Check certificate files exist and are readable
+    - Ensure certificate paths are absolute
+    - Try with `sslmode=require` first to test basic SSL
+  </Accordion>
+
+  <Accordion title="Cannot see my database">
+    **Possible causes:**
+    - User lacks permissions to the database
+    - Database name misspelled
+    - Wrong database selected on server
+    
+    **Solutions:**
+    - Grant user access to the database
+    - Check database name spelling
+    - List available databases and verify name
+  </Accordion>
+</AccordionGroup>
+
+<Tip>
+Need help? Check your database server logs for detailed error messages when connection attempts fail.
+</Tip>

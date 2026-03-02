@@ -1,0 +1,373 @@
+---
+title: 'Chats'
+description: 'Manage AI chat sessions for SQL generation'
+---
+
+## Overview
+
+The Chats API manages AI-powered chat sessions for generating and refining SQL queries. Each chat is associated with a database connection and contains a conversation history.
+
+<Note>
+All chat endpoints require an active Pro subscription.
+</Note>
+
+## Endpoints
+
+### Create Chat
+
+Create a new AI chat session.
+
+<CodeGroup>
+```bash Request
+POST /rpc/chats.create
+Content-Type: application/json
+
+{
+  "connectionId": "01932e8f-5f5e-7b8a-9f3d-4c5e6a7b8c9d"
+}
+```
+
+```json Response
+{}
+```
+</CodeGroup>
+
+<ParamField path="connectionId" type="string" required>
+  UUID of the database connection for this chat
+</ParamField>
+
+<Note>
+The `databaseId` parameter is deprecated but still supported. Use `connectionId` instead.
+</Note>
+
+### List Chats
+
+Retrieve all chat sessions with their message history.
+
+<CodeGroup>
+```bash Request
+POST /rpc/chats.list
+Content-Type: application/json
+
+{}
+```
+
+```json Response
+[
+  {
+    "id": "01932e8f-5f5e-7b8a-9f3d-4c5e6a7b8c9d",
+    "userId": "01931234-5678-9abc-def0-123456789abc",
+    "connectionId": "01932abc-def0-1234-5678-9abcdef01234",
+    "title": "Sales Analysis Query",
+    "activeStreamId": null,
+    "createdAt": "2024-01-15T10:30:00.000Z",
+    "updatedAt": "2024-01-15T10:35:00.000Z",
+    "messages": [
+      {
+        "id": "01932f00-1111-2222-3333-444444444444",
+        "chatId": "01932e8f-5f5e-7b8a-9f3d-4c5e6a7b8c9d",
+        "role": "user",
+        "parts": [
+          {
+            "type": "text",
+            "text": "Show me total sales by month"
+          }
+        ],
+        "createdAt": "2024-01-15T10:30:00.000Z",
+        "updatedAt": "2024-01-15T10:30:00.000Z"
+      },
+      {
+        "id": "01932f00-5555-6666-7777-888888888888",
+        "chatId": "01932e8f-5f5e-7b8a-9f3d-4c5e6a7b8c9d",
+        "role": "assistant",
+        "parts": [
+          {
+            "type": "text",
+            "text": "Here's a query to get total sales by month:\n\n```sql\nSELECT \n  DATE_TRUNC('month', created_at) as month,\n  SUM(amount) as total_sales\nFROM sales\nGROUP BY month\nORDER BY month DESC\n```"
+          }
+        ],
+        "createdAt": "2024-01-15T10:30:15.000Z",
+        "updatedAt": "2024-01-15T10:30:15.000Z"
+      }
+    ]
+  }
+]
+```
+</CodeGroup>
+
+<ResponseField name="id" type="string">
+  UUIDv7 identifier for the chat
+</ResponseField>
+
+<ResponseField name="userId" type="string">
+  UUID of the chat owner
+</ResponseField>
+
+<ResponseField name="connectionId" type="string">
+  UUID of the associated database connection
+</ResponseField>
+
+<ResponseField name="title" type="string | null">
+  Auto-generated chat title (null until first message)
+</ResponseField>
+
+<ResponseField name="activeStreamId" type="string | null">
+  UUID of currently streaming message (null when not streaming)
+</ResponseField>
+
+<ResponseField name="messages" type="array">
+  Array of chat messages with parts and metadata
+</ResponseField>
+
+### Update Chat
+
+Update chat properties like title.
+
+<CodeGroup>
+```bash Request
+POST /rpc/chats.update
+Content-Type: application/json
+
+{
+  "id": "01932e8f-5f5e-7b8a-9f3d-4c5e6a7b8c9d",
+  "title": "Monthly Sales Report"
+}
+```
+
+```json Response
+{}
+```
+</CodeGroup>
+
+<ParamField path="id" type="string" required>
+  UUID of the chat to update
+</ParamField>
+
+<ParamField path="title" type="string">
+  Updated chat title
+</ParamField>
+
+<Note>
+You cannot update `userId`, `connectionId`, `activeStreamId`, `createdAt`, or `updatedAt` fields.
+</Note>
+
+### Remove Chat
+
+Delete one or more chat sessions and their messages.
+
+<CodeGroup>
+```bash Single Chat
+POST /rpc/chats.remove
+Content-Type: application/json
+
+{
+  "id": "01932e8f-5f5e-7b8a-9f3d-4c5e6a7b8c9d"
+}
+```
+
+```bash Multiple Chats
+POST /rpc/chats.remove
+Content-Type: application/json
+
+[
+  {"id": "01932e8f-5f5e-7b8a-9f3d-4c5e6a7b8c9d"},
+  {"id": "01932f1a-6a7b-8c9d-0e1f-2a3b4c5d6e7f"}
+]
+```
+
+```json Response
+{}
+```
+</CodeGroup>
+
+<ParamField path="id" type="string" required>
+  UUID of the chat to remove
+</ParamField>
+
+### Sync Chats
+
+Synchronize chat sessions between local and cloud.
+
+<CodeGroup>
+```bash Request
+POST /rpc/chats.sync
+Content-Type: application/json
+
+[
+  {
+    "id": "01932e8f-5f5e-7b8a-9f3d-4c5e6a7b8c9d",
+    "updatedAt": "2024-01-15T10:30:00.000Z"
+  }
+]
+```
+
+```json Response
+[
+  {
+    "type": "update",
+    "value": {
+      "id": "01932e8f-5f5e-7b8a-9f3d-4c5e6a7b8c9d",
+      "title": "Sales Analysis Query",
+      "connectionId": "01932abc-def0-1234-5678-9abcdef01234",
+      "createdAt": "2024-01-15T10:30:00.000Z",
+      "updatedAt": "2024-01-15T10:35:00.000Z"
+    }
+  },
+  {
+    "type": "insert",
+    "value": {
+      "id": "01932f1a-6a7b-8c9d-0e1f-2a3b4c5d6e7f",
+      "title": "User Statistics",
+      "connectionId": "01932abc-def0-1234-5678-9abcdef01234",
+      "createdAt": "2024-01-16T12:00:00.000Z",
+      "updatedAt": "2024-01-16T12:00:00.000Z"
+    }
+  },
+  {
+    "type": "delete",
+    "value": "01932abc-def0-1234-5678-9abcdef01234"
+  }
+]
+```
+</CodeGroup>
+
+<ParamField path="[].id" type="string" required>
+  UUID of the local chat
+</ParamField>
+
+<ParamField path="[].updatedAt" type="string" required>
+  ISO 8601 timestamp of last local update
+</ParamField>
+
+## Data Model
+
+### Chat Object
+
+```typescript
+interface Chat {
+  id: string              // UUIDv7
+  userId: string          // UUIDv7, foreign key to users
+  connectionId: string    // UUIDv7, foreign key to connections
+  title: string | null    // Auto-generated title
+  activeStreamId: string | null // Current streaming message ID
+  createdAt: Date
+  updatedAt: Date
+  messages?: ChatMessage[] // Included in list response
+}
+```
+
+### Chat Message Object
+
+```typescript
+interface ChatMessage {
+  id: string              // UUIDv7
+  chatId: string          // UUIDv7, foreign key to chats
+  role: 'user' | 'assistant' | 'system'
+  parts: MessagePart[]    // Encrypted message parts
+  metadata?: object       // Encrypted metadata
+  createdAt: Date
+  updatedAt: Date
+}
+
+interface MessagePart {
+  type: 'text' | 'tool-call' | 'tool-result'
+  text?: string
+  toolCallId?: string
+  toolName?: string
+  args?: object
+  result?: unknown
+}
+```
+
+## Message Management
+
+For creating and managing individual chat messages, see the Chat Messages API:
+
+- `POST /rpc/chatsMessages.create` - Add messages to a chat
+- `POST /rpc/chatsMessages.update` - Update message content
+- `POST /rpc/chatsMessages.remove` - Delete messages
+- `POST /rpc/chatsMessages.sync` - Sync messages
+
+## Security
+
+### Encryption
+
+All message content and metadata are encrypted:
+
+```typescript
+interface EncryptedMessage {
+  parts: string[]    // Encrypted JSON array
+  metadata: string   // Encrypted JSON object
+}
+```
+
+### Subscription Required
+
+All chat endpoints require an active Pro subscription:
+
+```json
+{
+  "error": {
+    "code": "FORBIDDEN",
+    "message": "To use this feature, a subscription is required. Please subscribe to a Pro plan to continue."
+  }
+}
+```
+
+## Error Responses
+
+### Validation Error
+
+```json
+{
+  "error": {
+    "code": "BAD_REQUEST",
+    "message": "connectionId: must be a valid UUID"
+  }
+}
+```
+
+### Subscription Required
+
+```json
+{
+  "error": {
+    "code": "FORBIDDEN",
+    "message": "To use this feature, a subscription is required. Please subscribe to a Pro plan to continue."
+  }
+}
+```
+
+## Usage Example
+
+```javascript
+// 1. Create a new chat
+await client.chats.create({
+  connectionId: "01932e8f-5f5e-7b8a-9f3d-4c5e6a7b8c9d"
+})
+
+// 2. List all chats with messages
+const chats = await client.chats.list()
+
+// 3. Update chat title
+await client.chats.update({
+  id: "01932e8f-5f5e-7b8a-9f3d-4c5e6a7b8c9d",
+  title: "Sales Analysis"
+})
+
+// 4. Remove a chat
+await client.chats.remove({
+  id: "01932e8f-5f5e-7b8a-9f3d-4c5e6a7b8c9d"
+})
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="AI Features" icon="sparkles" href="/api/ai">
+    Use AI to generate and refine SQL queries
+  </Card>
+  <Card title="Connections" icon="database" href="/api/connections">
+    Manage database connections for chats
+  </Card>
+</CardGroup>

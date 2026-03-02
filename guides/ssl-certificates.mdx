@@ -1,0 +1,424 @@
+---
+title: SSL Certificates
+description: Configure SSL/TLS certificates for secure database connections
+---
+
+Conar supports SSL/TLS connections to secure your database traffic. This guide covers SSL configuration for PostgreSQL, MySQL, and Microsoft SQL Server.
+
+## Why Use SSL?
+
+SSL/TLS encryption provides:
+
+- **Data encryption** - Protects sensitive data in transit
+- **Authentication** - Verifies database server identity
+- **Compliance** - Meets security requirements for production systems
+- **Man-in-the-middle protection** - Prevents connection hijacking
+
+## SSL Configuration by Database
+
+### PostgreSQL
+
+PostgreSQL supports comprehensive SSL configuration through connection string parameters.
+
+#### SSL Modes
+
+Use the `sslmode` parameter to control SSL behavior:
+
+```
+postgresql://user:password@host:5432/db?sslmode=require
+```
+
+**Available modes:**
+
+- `disable` - No SSL encryption
+- `prefer` - Use SSL if available, fallback to non-SSL
+- `require` - Require SSL, but don't verify certificates
+- `verify` - Require SSL and verify server certificate
+- `no-verify` - Require SSL without certificate verification
+
+<Accordion title="PostgreSQL SSL Mode Details">
+  ### disable
+  Disables SSL completely. Cannot be used with other SSL parameters.
+
+  ```
+  ?sslmode=disable
+  ```
+
+  ### prefer (default)
+  Attempts SSL connection first, falls back to non-SSL if unavailable.
+
+  ```
+  ?sslmode=prefer
+  ```
+
+  ### require
+  Requires SSL but accepts any certificate (including self-signed).
+
+  ```
+  ?sslmode=require
+  ```
+
+  ### verify
+  Requires SSL and validates the server certificate against a CA certificate.
+
+  ```
+  ?sslmode=verify&sslrootcert=-----BEGIN CERTIFICATE-----...
+  ```
+
+  ### no-verify
+  Requires SSL but doesn't validate certificates.
+
+  ```
+  ?sslmode=no-verify
+  ```
+</Accordion>
+
+#### SSL Certificate Parameters
+
+Provide certificates directly in the connection string:
+
+**sslcert** - Client certificate
+```
+?sslcert=-----BEGIN CERTIFICATE-----
+MIID...
+-----END CERTIFICATE-----
+```
+
+**sslkey** - Client private key
+```
+?sslkey=-----BEGIN PRIVATE KEY-----
+MIIE...
+-----END PRIVATE KEY-----
+```
+
+**sslrootcert** - CA certificate (root certificate)
+```
+?sslrootcert=-----BEGIN CERTIFICATE-----
+MIID...
+-----END CERTIFICATE-----
+```
+
+**sslpassword** - Password for encrypted private key
+```
+?sslpassword=mypassword
+```
+
+**sslservername** - Override server name for SNI
+```
+?sslservername=db.example.com
+```
+
+#### Complete PostgreSQL Example
+
+```
+postgresql://user:pass@host:5432/db?sslmode=verify&sslrootcert=-----BEGIN CERTIFICATE-----
+MIIDXTCCAkWgAwIBAgIJAKJ...
+-----END CERTIFICATE-----&sslcert=-----BEGIN CERTIFICATE-----
+MIIDmzCCAoOgAwIBAgIUf...
+-----END CERTIFICATE-----&sslkey=-----BEGIN PRIVATE KEY-----
+MIIEvQIBADANBgkqhki...
+-----END PRIVATE KEY-----
+```
+
+### MySQL
+
+MySQL SSL configuration uses different parameter names than PostgreSQL.
+
+#### Basic SSL Configuration
+
+Enable or disable SSL with the `ssl` parameter:
+
+```
+mysql://user:password@host:3306/db?ssl=true
+```
+
+**SSL parameter values:**
+- `ssl=1` or `ssl=true` - Enable SSL
+- `ssl=0` or `ssl=false` - Disable SSL
+
+<Note>
+  Setting `ssl=false` cannot be combined with certificate parameters.
+</Note>
+
+#### MySQL Certificate Parameters
+
+**sslca** - CA certificate
+```
+?sslca=-----BEGIN CERTIFICATE-----
+MIID...
+-----END CERTIFICATE-----
+```
+
+**sslcert** - Client certificate
+```
+?sslcert=-----BEGIN CERTIFICATE-----
+MIID...
+-----END CERTIFICATE-----
+```
+
+**sslkey** - Client private key
+```
+?sslkey=-----BEGIN PRIVATE KEY-----
+MIIE...
+-----END PRIVATE KEY-----
+```
+
+**sslpassphrase** or **sslpassword** - Private key password
+```
+?sslpassphrase=mypassword
+```
+
+**sslrejectunauthorized** - Verify server certificate
+```
+?sslrejectunauthorized=true
+```
+
+Values: `1`, `true`, `0`, `false`
+
+#### Advanced MySQL SSL Options
+
+**sslciphers** - Allowed cipher suites
+```
+?sslciphers=ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384
+```
+
+**sslminversion** - Minimum TLS version
+```
+?sslminversion=TLSv1.2
+```
+
+**sslmaxversion** - Maximum TLS version
+```
+?sslmaxversion=TLSv1.3
+```
+
+**sslpfx** - PKCS#12 certificate bundle
+```
+?sslpfx=base64encodedpfx...
+```
+
+#### Complete MySQL Example
+
+```
+mysql://user:pass@host:3306/db?ssl=true&sslca=-----BEGIN CERTIFICATE-----
+MIIDXTCCAkWgAwIBAgIJAKJ...
+-----END CERTIFICATE-----&sslrejectunauthorized=true
+```
+
+### Microsoft SQL Server
+
+MSSQL uses simpler SSL configuration focused on encryption and trust.
+
+#### Encryption Parameter
+
+Control encryption with the `encrypt` parameter:
+
+```
+mssql://user:password@host:1433/db?encrypt=true
+```
+
+**Values:**
+- `encrypt=true` - Enable encryption (default)
+- `encrypt=false` - Disable encryption
+
+#### Trust Server Certificate
+
+Control certificate validation with `trustservercertificate`:
+
+```
+mssql://user:password@host:1433/db?trustservercertificate=true
+```
+
+**Values:**
+- `trustservercertificate=true` - Accept any certificate (default)
+- `trustservercertificate=false` - Validate server certificate
+
+#### Complete MSSQL Example
+
+```
+mssql://user:pass@host:1433/db?encrypt=true&trustservercertificate=false
+```
+
+<Warning>
+  For production databases, always use `encrypt=true` and `trustservercertificate=false` to ensure secure, validated connections.
+</Warning>
+
+## Certificate Formats
+
+### PEM Format
+
+Most SSL certificates use PEM format (Base64-encoded):
+
+```
+-----BEGIN CERTIFICATE-----
+MIIDXTCCAkWgAwIBAgIJAKJ...
+-----END CERTIFICATE-----
+```
+
+**Converting other formats to PEM:**
+
+```bash
+# DER to PEM
+openssl x509 -inform der -in certificate.cer -out certificate.pem
+
+# P12 to PEM
+openssl pkcs12 -in certificate.p12 -out certificate.pem -nodes
+```
+
+### Multi-line Certificates in URLs
+
+When adding certificates to connection strings:
+
+1. **Keep line breaks** - Include `\n` characters or actual line breaks
+2. **URL encode if needed** - Some characters may need encoding
+3. **Test the connection** - Verify SSL works before saving
+
+## Common SSL Scenarios
+
+<Accordion title="Self-Signed Certificates">
+  For development databases with self-signed certificates:
+
+  ### PostgreSQL
+  ```
+  ?sslmode=require
+  ```
+  or
+  ```
+  ?sslmode=no-verify
+  ```
+
+  ### MySQL
+  ```
+  ?ssl=true&sslrejectunauthorized=false
+  ```
+
+  ### MSSQL
+  ```
+  ?encrypt=true&trustservercertificate=true
+  ```
+
+  <Warning>
+    Never use self-signed certificates in production without proper validation.
+  </Warning>
+</Accordion>
+
+<Accordion title="AWS RDS SSL">
+  Connecting to AWS RDS databases with SSL:
+
+  ### PostgreSQL on RDS
+  ```
+  postgresql://user:pass@instance.region.rds.amazonaws.com:5432/db?sslmode=verify&sslrootcert=-----BEGIN CERTIFICATE-----
+  [AWS RDS CA certificate]
+  -----END CERTIFICATE-----
+  ```
+
+  ### MySQL on RDS
+  ```
+  mysql://user:pass@instance.region.rds.amazonaws.com:3306/db?ssl=true&sslca=-----BEGIN CERTIFICATE-----
+  [AWS RDS CA certificate]
+  -----END CERTIFICATE-----&sslrejectunauthorized=true
+  ```
+
+  Download AWS RDS certificates from:
+  https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.SSL.html
+</Accordion>
+
+<Accordion title="Azure Database SSL">
+  Connecting to Azure databases:
+
+  ### PostgreSQL on Azure
+  ```
+  postgresql://user@server:pass@server.postgres.database.azure.com:5432/db?sslmode=require
+  ```
+
+  ### MySQL on Azure
+  ```
+  mysql://user@server:pass@server.mysql.database.azure.com:3306/db?ssl=true
+  ```
+
+  Azure databases require SSL by default and provide valid certificates.
+</Accordion>
+
+<Accordion title="Google Cloud SQL">
+  Connecting to Google Cloud SQL:
+
+  ### PostgreSQL on Cloud SQL
+  ```
+  postgresql://user:pass@public-ip:5432/db?sslmode=verify&sslrootcert=-----BEGIN CERTIFICATE-----
+  [Cloud SQL server CA]
+  -----END CERTIFICATE-----&sslcert=-----BEGIN CERTIFICATE-----
+  [Client certificate]
+  -----END CERTIFICATE-----&sslkey=-----BEGIN PRIVATE KEY-----
+  [Client private key]
+  -----END PRIVATE KEY-----
+  ```
+
+  Download certificates from the Cloud SQL instance details page.
+</Accordion>
+
+## Troubleshooting SSL Issues
+
+<Accordion title="Connection Refused">
+  If SSL connection is refused:
+
+  1. **Verify SSL is enabled** on the database server
+  2. **Check port** - Ensure you're connecting to the correct port
+  3. **Test without SSL** - Try `sslmode=disable` or `ssl=false` to isolate issue
+  4. **Check firewall** - Verify SSL traffic isn't blocked
+</Accordion>
+
+<Accordion title="Certificate Verification Failed">
+  If certificate validation fails:
+
+  1. **Check CA certificate** - Ensure you have the correct root certificate
+  2. **Verify hostname** - Certificate must match the hostname
+  3. **Check expiration** - Ensure certificates haven't expired
+  4. **Try no-verify mode** - Test with `sslmode=no-verify` or `sslrejectunauthorized=false`
+  5. **Review certificate chain** - Ensure all intermediate certificates are included
+</Accordion>
+
+<Accordion title="Parameter Conflicts">
+  Common parameter conflicts:
+
+  ### PostgreSQL
+  - Cannot use `sslmode=disable` with other SSL parameters
+  - Error: "sslmode=disable cannot be used with SSL certificate parameters"
+  
+  **Solution:** Remove SSL parameters or change sslmode
+
+  ### MySQL
+  - Cannot use `ssl=false` with certificate parameters
+  - Error: "ssl=false cannot be used with SSL certificate parameters"
+  
+  **Solution:** Remove SSL parameters or set `ssl=true`
+</Accordion>
+
+## Best Practices
+
+### Production Databases
+
+1. **Always use SSL** - Enable encryption for all production connections
+2. **Validate certificates** - Use `verify` mode or `sslrejectunauthorized=true`
+3. **Use strong ciphers** - Specify modern cipher suites
+4. **Minimum TLS 1.2** - Disable older TLS versions
+5. **Rotate certificates** - Update certificates before expiration
+
+### Development Databases
+
+1. **Use SSL when possible** - Practice secure configurations
+2. **Document certificate requirements** - Note any self-signed certificates
+3. **Test SSL before deployment** - Ensure production SSL will work
+4. **Separate credentials** - Don't use production certificates in development
+
+### Certificate Management
+
+1. **Store certificates securely** - Use environment variables or secret managers
+2. **Monitor expiration** - Set up alerts for certificate renewal
+3. **Use automation** - Automate certificate rotation when possible
+4. **Backup certificates** - Keep secure backups of all certificates
+
+## Next Steps
+
+- Learn about [creating connections](/guides/creating-connections)
+- Explore [AI features](/guides/using-ai-features) for query generation
+- Manage your [saved queries](/guides/managing-queries)

@@ -1,0 +1,244 @@
+---
+title: Using AI Features
+description: Generate, fix, and optimize SQL queries with AI assistance in Conar
+---
+
+Conar includes powerful AI features to help you write SQL queries faster and more accurately. The AI understands your database schema and generates queries optimized for your specific database type.
+
+## AI Chat Interface
+
+The AI chat interface helps you generate SQL queries through natural language conversation.
+
+<Steps>
+  <Step title="Start a New Chat">
+    Navigate to a database connection and open the SQL editor. Click on the AI chat icon to start a new conversation.
+
+    The chat requires an active subscription to use AI features.
+  </Step>
+
+  <Step title="Describe Your Query">
+    Type what you want to do in natural language. For example:
+    - "Show me all users created in the last 30 days"
+    - "Calculate the average order value by customer"
+    - "Find duplicate email addresses in the users table"
+
+    The AI uses your database schema as context, so it knows your table and column names.
+  </Step>
+
+  <Step title="Review Generated SQL">
+    The AI will generate SQL code optimized for your database type (PostgreSQL, MySQL, MSSQL, or ClickHouse). The query is returned in a markdown code block ready to execute.
+
+    Each query is formatted with:
+    - 2-space indentation for readability
+    - Proper table and column name quoting
+    - Database-specific syntax and functions
+  </Step>
+
+  <Step title="Execute or Refine">
+    You can:
+    - Copy the SQL to your editor and execute it
+    - Ask the AI to modify specific parts
+    - Request performance optimizations
+    - Ask for explanations of complex queries
+  </Step>
+</Steps>
+
+## AI Features
+
+### Generate SQL from Natural Language
+
+The AI chat uses advanced language models to convert your requests into SQL:
+
+- **Claude Sonnet 4.5** - Primary model for SQL generation
+- **Claude Opus 4.5** - Fallback for high-load situations
+- **Gemini 2.5 Pro** - Additional fallback option
+
+The system automatically retries with alternative models if one is unavailable.
+
+### Query Enhancement
+
+The AI can enhance your prompts for better results. When you type a query, the enhancement feature:
+
+- Fixes typos and grammar mistakes
+- Makes vague requests more specific
+- Adds missing context from chat history
+- Maintains your original intent and tone
+
+**Example:**
+```
+Original: "show users"
+Enhanced: "Select all columns from the users table"
+```
+
+### Fix SQL Errors
+
+When a query fails, the AI can automatically fix it based on the error message:
+
+<Steps>
+  <Step title="Execute Query">
+    Run your SQL query in the editor. If it fails, you'll see the error message.
+  </Step>
+
+  <Step title="Request Fix">
+    Use the "Fix SQL" feature to send your query and error to the AI.
+  </Step>
+
+  <Step title="Review Fixed Query">
+    The AI analyzes the error and returns a corrected version:
+    - Preserves your original formatting and style
+    - Only fixes the specific issue
+    - Returns the query unchanged if already valid
+  </Step>
+</Steps>
+
+### Database Schema Context
+
+The AI has access to your complete database schema including:
+
+- Table names and structures
+- Column names and data types
+- Relationships and constraints
+- Enum types and custom types
+- Current date and time for time-based queries
+
+**Example conversation:**
+```
+You: "What tables do I have?"
+AI: "Based on your schema, you have: users, orders, products, and customers tables."
+
+You: "Show me recent orders with customer names"
+AI: [Generates SQL with proper JOIN between orders and customers tables]
+```
+
+## Advanced AI Capabilities
+
+### Execute Queries for Data Analysis
+
+The AI can execute SELECT queries directly to analyze your data:
+
+- Runs queries against your database
+- Analyzes the results
+- Provides insights and summaries
+- Suggests follow-up queries
+
+**Example:**
+```
+You: "What's the average order value?"
+AI: [Executes query, shows result]
+     "The average order value is $127.50 based on 1,234 orders."
+```
+
+### Web Search Integration
+
+For queries requiring external information, the AI can search the web:
+
+- Current information beyond database schema
+- Documentation for SQL functions
+- Best practices and patterns
+- External API references
+
+### Context7 MCP Integration
+
+The AI automatically uses Context7 MCP when you need:
+
+- Library or API documentation
+- Code generation assistance
+- Setup or configuration steps
+- Framework-specific patterns
+
+You don't need to explicitly request this - it happens automatically when relevant.
+
+## AI Requirements
+
+### Database-Specific SQL
+
+The AI generates SQL that is:
+
+- **100% valid** for your database type
+- **Optimized** for performance
+- **Production-ready** for direct execution
+- **Properly formatted** with consistent style
+
+### Query Formatting Standards
+
+All AI-generated queries follow these standards:
+
+- 2 spaces for indentation
+- Quoted table and column names (prevents case sensitivity issues)
+- Separate code blocks for multiple queries
+- No markdown headings in responses
+- Same language as your message
+
+## Chat Management
+
+<Accordion title="Creating Multiple Chats">
+  You can create multiple chat conversations per database connection:
+
+  - Each chat maintains its own conversation history
+  - Switch between chats to organize different tasks
+  - Rename chats for easy identification
+  - Chat titles are auto-generated based on initial queries
+</Accordion>
+
+<Accordion title="Chat History and Context">
+  The AI remembers your conversation history:
+
+  - Refers back to previous queries and results
+  - Understands "modify the previous query" requests
+  - Builds on earlier context in the conversation
+  - Maintains context for complex multi-step tasks
+
+  **Note:** Very long chats may hit token limits. If this happens, create a new chat.
+</Accordion>
+
+<Accordion title="AI Error Messages">
+  If the AI cannot respond, you may see:
+
+  ### "Overloaded error"
+  The AI service is experiencing high load. Wait a moment and try again.
+
+  ### "Prompt is too long"
+  Your chat history is too large. Create a new chat to continue.
+
+  ### "Unable to generate response"
+  A general error occurred. Check your internet connection and try again.
+</Accordion>
+
+## Best Practices
+
+### Writing Effective Prompts
+
+1. **Be specific** - Include table names and desired columns
+2. **Provide context** - Mention filters, date ranges, or conditions
+3. **Request formatting** - Specify ordering, grouping, or limits
+4. **Iterate** - Start simple, then refine with follow-up requests
+
+**Good examples:**
+```
+"Show the top 10 customers by total order value in 2024"
+"Find users who haven't logged in for 90 days, ordered by last login"
+"Calculate monthly revenue growth percentage for the last 6 months"
+```
+
+### Modifying Generated Queries
+
+For changes to existing queries:
+
+- **Specific changes**: "Change the date range to last 7 days"
+- **Performance**: "Add an index hint for better performance"
+- **Format**: "Group the results by month instead of day"
+
+The AI will update only the specified parts, preserving the rest.
+
+### Security Considerations
+
+- The AI only generates SELECT queries by default for safety
+- Review all generated queries before execution
+- Be cautious with INSERT, UPDATE, or DELETE operations
+- The AI generates queries for the provided schema only
+
+## Next Steps
+
+- Learn to [manage and save queries](/guides/managing-queries)
+- Explore [connection configuration](/guides/creating-connections)
+- Configure [SSL certificates](/guides/ssl-certificates) for secure connections

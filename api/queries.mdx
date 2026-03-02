@@ -1,0 +1,331 @@
+---
+title: 'Queries'
+description: 'Manage saved SQL queries'
+---
+
+## Overview
+
+The Queries API allows you to save, retrieve, and manage SQL queries. Query content is encrypted at rest.
+
+## Endpoints
+
+### Create Query
+
+Create one or more saved queries.
+
+<CodeGroup>
+```bash Single Query
+POST /rpc/queries.create
+Content-Type: application/json
+
+{
+  "name": "Top 10 Users",
+  "query": "SELECT * FROM users ORDER BY created_at DESC LIMIT 10",
+  "connectionId": "01932e8f-5f5e-7b8a-9f3d-4c5e6a7b8c9d"
+}
+```
+
+```bash Multiple Queries
+POST /rpc/queries.create
+Content-Type: application/json
+
+[
+  {
+    "name": "Active Users",
+    "query": "SELECT * FROM users WHERE status = 'active'",
+    "connectionId": "01932e8f-5f5e-7b8a-9f3d-4c5e6a7b8c9d"
+  },
+  {
+    "name": "Recent Orders",
+    "query": "SELECT * FROM orders WHERE created_at > NOW() - INTERVAL '7 days'",
+    "connectionId": "01932e8f-5f5e-7b8a-9f3d-4c5e6a7b8c9d"
+  }
+]
+```
+
+```json Response
+{}
+```
+</CodeGroup>
+
+<ParamField path="name" type="string" required>
+  Human-readable name for the query
+</ParamField>
+
+<ParamField path="query" type="string" required>
+  SQL query content (will be encrypted)
+</ParamField>
+
+<ParamField path="connectionId" type="string" required>
+  UUID of the associated database connection
+</ParamField>
+
+<Note>
+The `databaseId` parameter is deprecated but still supported for backward compatibility. Use `connectionId` instead.
+</Note>
+
+### List Queries
+
+Retrieve all saved queries for the authenticated user.
+
+<CodeGroup>
+```bash Request
+POST /rpc/queries.list
+Content-Type: application/json
+
+{}
+```
+
+```json Response
+[
+  {
+    "id": "01932e8f-5f5e-7b8a-9f3d-4c5e6a7b8c9d",
+    "name": "Top 10 Users",
+    "query": "SELECT * FROM users ORDER BY created_at DESC LIMIT 10",
+    "connectionId": "01932abc-def0-1234-5678-9abcdef01234",
+    "userId": "01931234-5678-9abc-def0-123456789abc",
+    "createdAt": "2024-01-15T10:30:00.000Z",
+    "updatedAt": "2024-01-15T10:30:00.000Z"
+  }
+]
+```
+</CodeGroup>
+
+<ResponseField name="id" type="string">
+  UUIDv7 identifier for the query
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  Query name
+</ResponseField>
+
+<ResponseField name="query" type="string">
+  SQL query content
+</ResponseField>
+
+<ResponseField name="connectionId" type="string">
+  UUID of the associated connection
+</ResponseField>
+
+<ResponseField name="userId" type="string">
+  UUID of the owner
+</ResponseField>
+
+<ResponseField name="createdAt" type="string">
+  ISO 8601 timestamp
+</ResponseField>
+
+<ResponseField name="updatedAt" type="string">
+  ISO 8601 timestamp
+</ResponseField>
+
+### Remove Query
+
+Delete one or more saved queries.
+
+<CodeGroup>
+```bash Single Query
+POST /rpc/queries.remove
+Content-Type: application/json
+
+{
+  "id": "01932e8f-5f5e-7b8a-9f3d-4c5e6a7b8c9d"
+}
+```
+
+```bash Multiple Queries
+POST /rpc/queries.remove
+Content-Type: application/json
+
+[
+  {"id": "01932e8f-5f5e-7b8a-9f3d-4c5e6a7b8c9d"},
+  {"id": "01932f1a-6a7b-8c9d-0e1f-2a3b4c5d6e7f"}
+]
+```
+
+```json Response
+{}
+```
+</CodeGroup>
+
+<ParamField path="id" type="string" required>
+  UUID of the query to remove
+</ParamField>
+
+### Sync Queries
+
+Synchronize queries between local and cloud storage.
+
+<CodeGroup>
+```bash Request
+POST /rpc/queries.sync
+Content-Type: application/json
+
+[
+  {
+    "id": "01932e8f-5f5e-7b8a-9f3d-4c5e6a7b8c9d",
+    "updatedAt": "2024-01-15T10:30:00.000Z"
+  }
+]
+```
+
+```json Response
+[
+  {
+    "type": "update",
+    "value": {
+      "id": "01932e8f-5f5e-7b8a-9f3d-4c5e6a7b8c9d",
+      "name": "Top 10 Users",
+      "query": "SELECT * FROM users ORDER BY created_at DESC LIMIT 10",
+      "connectionId": "01932abc-def0-1234-5678-9abcdef01234",
+      "createdAt": "2024-01-15T10:30:00.000Z",
+      "updatedAt": "2024-01-15T10:35:00.000Z"
+    }
+  },
+  {
+    "type": "insert",
+    "value": {
+      "id": "01932f1a-6a7b-8c9d-0e1f-2a3b4c5d6e7f",
+      "name": "Recent Orders",
+      "query": "SELECT * FROM orders WHERE created_at > NOW() - INTERVAL '7 days'",
+      "connectionId": "01932abc-def0-1234-5678-9abcdef01234",
+      "createdAt": "2024-01-16T12:00:00.000Z",
+      "updatedAt": "2024-01-16T12:00:00.000Z"
+    }
+  },
+  {
+    "type": "delete",
+    "value": "01932abc-def0-1234-5678-9abcdef01234"
+  }
+]
+```
+</CodeGroup>
+
+<ParamField path="[].id" type="string" required>
+  UUID of the local query
+</ParamField>
+
+<ParamField path="[].updatedAt" type="string" required>
+  ISO 8601 timestamp of last local update
+</ParamField>
+
+<ResponseField name="[].type" type="enum">
+  Sync operation type:
+  - `insert` - New query from server
+  - `update` - Updated query from server  
+  - `delete` - Query deleted on server (only returns UUID)
+</ResponseField>
+
+<ResponseField name="[].value" type="object | string">
+  Query object for `insert`/`update`, or UUID string for `delete`
+</ResponseField>
+
+## Data Model
+
+### Query Object
+
+```typescript
+interface Query {
+  id: string              // UUIDv7
+  userId: string          // UUIDv7, foreign key to users
+  connectionId: string    // UUIDv7, foreign key to connections
+  name: string            // Display name
+  query: string           // Encrypted SQL query
+  createdAt: Date
+  updatedAt: Date
+}
+```
+
+## Sync Algorithm
+
+The sync endpoint uses a three-way merge strategy:
+
+1. **Updated Items**: Queries modified on the server since the client's last sync
+2. **New Items**: Queries that exist on server but not in client's input
+3. **Deleted Items**: Queries that exist in client's input but not on server
+
+The algorithm compares timestamps with a 1-second buffer to account for clock skew.
+
+## Security
+
+### Encryption
+
+All query content is encrypted at rest:
+
+```typescript
+interface EncryptedQuery {
+  query: string // Encrypted using user-specific secret
+}
+```
+
+### Access Control
+
+Users can only access their own queries:
+
+```sql
+WHERE queries.userId = :currentUserId
+```
+
+## Error Responses
+
+### Validation Error
+
+```json
+{
+  "error": {
+    "code": "BAD_REQUEST",
+    "message": "name: must not be empty, connectionId: must be a valid UUID"
+  }
+}
+```
+
+### Unauthorized
+
+```json
+{
+  "error": {
+    "code": "UNAUTHORIZED",
+    "message": "We could not find your session. Please sign in again."
+  }
+}
+```
+
+## Usage Example
+
+Typical workflow for managing queries:
+
+1. **Create a query** after writing SQL in the editor
+2. **List queries** to show all saved queries
+3. **Sync queries** periodically to keep local and cloud in sync
+4. **Remove query** when no longer needed
+
+```javascript
+// 1. Create a query
+await client.queries.create({
+  name: "Daily Sales Report",
+  query: "SELECT date, SUM(amount) FROM sales GROUP BY date",
+  connectionId: "01932e8f-5f5e-7b8a-9f3d-4c5e6a7b8c9d"
+})
+
+// 2. List all queries
+const queries = await client.queries.list()
+
+// 3. Sync queries
+const syncChanges = await client.queries.sync(
+  queries.map(q => ({ id: q.id, updatedAt: q.updatedAt }))
+)
+
+// 4. Remove a query
+await client.queries.remove({ id: "01932e8f-5f5e-7b8a-9f3d-4c5e6a7b8c9d" })
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Connections API" icon="database" href="/api/connections">
+    Manage database connections for your queries
+  </Card>
+  <Card title="AI Chat" icon="comments" href="/api/chats">
+    Use AI to generate SQL queries automatically
+  </Card>
+</CardGroup>

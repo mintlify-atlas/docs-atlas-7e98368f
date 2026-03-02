@@ -1,0 +1,416 @@
+---
+title: 'Security'
+description: 'Best practices and security features for protecting your Conar account'
+---
+
+## Overview
+
+Security is a top priority at Conar. This guide covers security best practices, features, and recommendations to keep your account and data safe.
+
+## Account Security
+
+### Strong Password Practices
+
+Protect your account with a strong password:
+
+<CardGroup cols={2}>
+  <Card title="Password Requirements" icon="key">
+    - Minimum 12 characters
+    - Mix of letters, numbers, symbols
+    - Avoid common words or patterns
+    - Unique to your Conar account
+  </Card>
+  
+  <Card title="Password Management" icon="shield">
+    - Use a password manager
+    - Never share your password
+    - Update regularly
+    - Don't reuse passwords
+  </Card>
+</CardGroup>
+
+### Two-Factor Authentication
+
+Enable 2FA for enhanced security:
+
+<Steps>
+  <Step title="Navigate to Security Settings">
+    Go to your account settings and find the security section.
+  </Step>
+  
+  <Step title="Enable 2FA">
+    Select "Enable Two-Factor Authentication" and choose your method.
+  </Step>
+  
+  <Step title="Configure Your Authenticator">
+    Scan the QR code with an authenticator app like Google Authenticator or Authy.
+  </Step>
+  
+  <Step title="Save Backup Codes">
+    Download and securely store your backup codes for account recovery.
+  </Step>
+</Steps>
+
+<Warning>
+Enable two-factor authentication immediately. It's the single most effective way to protect your account from unauthorized access.
+</Warning>
+
+## Authentication Security
+
+### Session Security
+
+Conar implements multiple session security measures:
+
+- **HTTP-only cookies**: Prevent JavaScript access to session tokens
+- **Secure transmission**: HTTPS-only in production
+- **Cookie prefixing**: Isolates auth cookies from other applications
+- **Cross-domain protection**: Subdomain cookies in production only
+- **Automatic rotation**: Sessions refresh periodically
+
+### Last Login Method Tracking
+
+Conar tracks your last login method:
+
+- Monitor account access patterns
+- Detect unusual authentication methods
+- Verify your login history
+- Identify potential security issues
+
+### Trusted Origins
+
+Authentication is only allowed from trusted sources:
+
+- Official Conar web application
+- Conar desktop application
+- Authorized development environments
+- Verified test environments
+
+<Tip>
+Only authenticate through official Conar applications. Be wary of phishing attempts asking for your credentials.
+</Tip>
+
+## Data Security
+
+### Database Security
+
+Your data is protected with:
+
+- Encrypted data transmission
+- Secure database connections
+- Regular security audits
+- Access control and permissions
+- Automated backups
+
+### User Data Protection
+
+Sensitive user information is handled securely:
+
+```typescript
+// Example: Sensitive fields not returned in API responses
+user: {
+  additionalFields: {
+    secret: {
+      type: 'string',
+      returned: false,  // Never exposed in API
+      input: false,
+    },
+    stripeCustomerId: {
+      type: 'string',
+      returned: false,  // Protected billing info
+      input: false,
+    }
+  }
+}
+```
+
+### Unique User Secrets
+
+Each user has a unique secret:
+
+- Generated automatically on account creation
+- Used for internal security operations
+- Never exposed through API
+- Rotated on security events
+
+## Payment Security
+
+### Stripe Integration
+
+Conar uses Stripe for payment processing:
+
+<CardGroup cols={2}>
+  <Card title="PCI Compliance" icon="credit-card">
+    - PCI DSS Level 1 certified
+    - No card data stored locally
+    - Tokenized payment methods
+    - Secure payment forms
+  </Card>
+  
+  <Card title="Data Protection" icon="lock">
+    - Encrypted transmission
+    - Secure customer portal
+    - Protected billing info
+    - Fraud detection
+  </Card>
+</CardGroup>
+
+### Customer Data
+
+Billing information is protected:
+
+- Stripe customer IDs stored securely
+- Card details never touch Conar servers
+- Payment methods managed through Stripe
+- Secure billing portal access
+
+<Note>
+Conar never stores your credit card information. All payment data is securely handled by Stripe.
+</Note>
+
+## Workspace Security
+
+### Organization Access Control
+
+Workspace security features:
+
+- Role-based access control (RBAC)
+- Member invitation system
+- Workspace isolation
+- Activity tracking
+- Member management
+
+### Workspace Invitations
+
+Secure team collaboration:
+
+- Email-based invitations
+- Time-limited invitation links
+- Workspace-specific permissions
+- Invitation revocation
+
+## API Security
+
+### Bearer Token Authentication
+
+Secure API access:
+
+```bash
+# Use bearer tokens for API authentication
+curl -H "Authorization: Bearer YOUR_TOKEN" \
+  https://api.conar.app/endpoint
+```
+
+Best practices:
+
+- Store tokens securely
+- Never commit tokens to version control
+- Rotate tokens regularly
+- Use environment variables
+- Revoke compromised tokens immediately
+
+### API Error Handling
+
+Security-conscious error responses:
+
+- Generic error messages for auth failures
+- No sensitive data in error responses
+- Rate limiting on sensitive endpoints
+- Alert system for critical errors
+
+## Desktop Application Security
+
+### Version Tracking
+
+Desktop security features:
+
+- Version verification on each request
+- Automatic update notifications
+- Secure local authentication
+- File protocol support
+
+### Desktop Authentication
+
+Secure desktop app access:
+
+- OAuth-style authentication flow
+- Secure token storage
+- Automatic session management
+- Version-specific compatibility
+
+## Email Security
+
+### Email Verification
+
+While email verification is not required by default:
+
+- Optional verification available
+- Secure email links
+- Time-limited verification tokens
+- Verification status tracking
+
+### Password Reset Security
+
+Secure password reset process:
+
+- Time-limited reset links
+- One-time use tokens
+- Email confirmation required
+- Notification on successful reset
+
+<Warning>
+If you receive a password reset email you didn't request, someone may be trying to access your account. Secure your account immediately and contact support.
+</Warning>
+
+## Security Monitoring
+
+### Automated Alerts
+
+Security events trigger alerts:
+
+- Authentication failures
+- API errors
+- Suspicious activity patterns
+- Critical system errors
+
+### Activity Logging
+
+Important activities are logged:
+
+- Login attempts
+- Password changes
+- 2FA modifications
+- Workspace access
+- API usage
+
+## Best Practices
+
+### Account Protection
+
+<AccordionGroup>
+  <Accordion title="Enable Two-Factor Authentication">
+    2FA adds an essential second layer of security. Enable it as soon as possible and keep your backup codes safe.
+  </Accordion>
+  
+  <Accordion title="Use Unique, Strong Passwords">
+    Never reuse passwords across services. Use a password manager to generate and store complex passwords.
+  </Accordion>
+  
+  <Accordion title="Review Active Sessions">
+    Regularly check your active sessions and revoke any you don't recognize.
+  </Accordion>
+  
+  <Accordion title="Monitor Account Activity">
+    Keep an eye on your login history and workspace activity for unusual patterns.
+  </Accordion>
+  
+  <Accordion title="Keep Software Updated">
+    Always use the latest version of the Conar desktop application for security patches.
+  </Accordion>
+</AccordionGroup>
+
+### API Security
+
+<Tip>
+When using the API, always:
+- Store tokens in secure environment variables
+- Use HTTPS for all requests
+- Implement rate limiting in your applications
+- Rotate tokens periodically
+- Never log or display tokens
+</Tip>
+
+### Workspace Security
+
+For team workspaces:
+
+- Review member access regularly
+- Remove departing team members promptly
+- Use principle of least privilege
+- Monitor workspace activity
+- Set clear access policies
+
+## Incident Response
+
+### If Your Account Is Compromised
+
+<Steps>
+  <Step title="Change Password Immediately">
+    Use the password reset feature to set a new, strong password.
+  </Step>
+  
+  <Step title="Enable 2FA">
+    If not already enabled, activate two-factor authentication right away.
+  </Step>
+  
+  <Step title="Revoke Active Sessions">
+    Sign out all active sessions to remove unauthorized access.
+  </Step>
+  
+  <Step title="Review Account Activity">
+    Check your account for any unauthorized changes or access.
+  </Step>
+  
+  <Step title="Contact Support">
+    Report the incident to Conar support for assistance.
+  </Step>
+</Steps>
+
+### Reporting Security Issues
+
+If you discover a security vulnerability:
+
+- Do not publicly disclose the issue
+- Contact security@conar.app immediately
+- Provide detailed information about the vulnerability
+- Allow time for the issue to be addressed
+- Follow responsible disclosure practices
+
+## Privacy Considerations
+
+### Data Collection
+
+Conar collects minimal necessary data:
+
+- Account information (name, email)
+- Authentication data
+- Usage analytics
+- Billing information (via Stripe)
+- Desktop version (if applicable)
+
+### Data Usage
+
+Your data is used for:
+
+- Account management
+- Service improvement
+- Security monitoring
+- Billing and subscriptions
+- Customer support
+
+<Note>
+Conar never sells your personal data to third parties. Your privacy is respected and protected.
+</Note>
+
+## Compliance
+
+### Security Standards
+
+Conar follows industry best practices:
+
+- HTTPS encryption everywhere
+- PCI DSS compliance (via Stripe)
+- Regular security audits
+- Automated vulnerability scanning
+- Secure development practices
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Authentication Methods" icon="key" href="/account/authentication">
+    Learn about available authentication options
+  </Card>
+  
+  <Card title="Subscription Plans" icon="credit-card" href="/account/subscription-plans">
+    Explore Conar subscription options
+  </Card>
+</CardGroup>

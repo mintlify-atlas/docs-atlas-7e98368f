@@ -1,0 +1,142 @@
+---
+title: 'API Introduction'
+description: 'Getting started with the Conar API'
+---
+
+## Overview
+
+The Conar API is built with [Hono](https://hono.dev/) and [oRPC](https://orpc.unnoq.com/), providing a type-safe RPC interface for managing database connections, queries, AI-powered chat, and more.
+
+## Base URL
+
+All API endpoints are prefixed with `/rpc/`:
+
+```
+https://api.conar.app/rpc
+```
+
+## API Architecture
+
+The API uses oRPC (OpenAPI RPC) for type-safe remote procedure calls. All endpoints are organized under the `/rpc/` prefix with the following structure:
+
+- **Connections**: `/rpc/connections.*` - Database connection management
+- **Queries**: `/rpc/queries.*` - Saved query management
+- **Chats**: `/rpc/chats.*` - AI chat sessions
+- **AI**: `/rpc/ai.*` - AI-powered features
+
+## Request Format
+
+All RPC endpoints accept POST requests with JSON payloads:
+
+```bash
+POST /rpc/connections.list
+Content-Type: application/json
+
+{}
+```
+
+## Response Format
+
+Successful responses return JSON:
+
+```json
+{
+  "result": [
+    {
+      "id": "01932e8f-5f5e-7b8a-9f3d-4c5e6a7b8c9d",
+      "name": "Production DB",
+      "type": "postgres"
+    }
+  ]
+}
+```
+
+## Error Handling
+
+The API uses standard HTTP status codes and returns detailed error messages:
+
+<CodeGroup>
+```json 400 Bad Request
+{
+  "error": {
+    "code": "BAD_REQUEST",
+    "message": "connectionString: must be a valid URL"
+  }
+}
+```
+
+```json 401 Unauthorized
+{
+  "error": {
+    "code": "UNAUTHORIZED",
+    "message": "We could not find your session. Please sign in again."
+  }
+}
+```
+
+```json 403 Forbidden
+{
+  "error": {
+    "code": "FORBIDDEN",
+    "message": "To use this feature, a subscription is required. Please subscribe to a Pro plan to continue."
+  }
+}
+```
+
+```json 404 Not Found
+{
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "Connection not found"
+  }
+}
+```
+
+```json 500 Internal Server Error
+{
+  "error": {
+    "code": "INTERNAL_SERVER_ERROR",
+    "message": "An unexpected error occurred"
+  }
+}
+```
+</CodeGroup>
+
+## Error Codes
+
+| Code | Description |
+|------|-------------|
+| `BAD_REQUEST` | Invalid input parameters or validation error |
+| `UNAUTHORIZED` | Missing or invalid authentication |
+| `FORBIDDEN` | Insufficient permissions or subscription required |
+| `NOT_FOUND` | Resource not found |
+| `INTERNAL_SERVER_ERROR` | Unexpected server error |
+
+## Rate Limiting
+
+Currently, there are no enforced rate limits, but this may change in the future.
+
+## Versioning
+
+The API currently uses a single version. Breaking changes will be communicated through the desktop app update mechanism.
+
+## SDKs and Client Libraries
+
+The API is designed to work with the Conar desktop application. The desktop app includes a type-safe client generated from the API schema.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="lock" href="/api/authentication">
+    Learn how to authenticate your API requests
+  </Card>
+  <Card title="Connections" icon="database" href="/api/connections">
+    Manage database connections
+  </Card>
+  <Card title="Queries" icon="code" href="/api/queries">
+    Work with saved queries
+  </Card>
+  <Card title="AI Features" icon="sparkles" href="/api/ai">
+    Explore AI-powered capabilities
+  </Card>
+</CardGroup>

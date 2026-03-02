@@ -1,0 +1,265 @@
+---
+title: 'Authentication'
+description: 'Learn about authentication methods and account access in Conar'
+---
+
+## Overview
+
+Conar uses Better Auth for secure, flexible authentication. Multiple authentication methods are supported to give you the best experience across web and desktop platforms.
+
+## Authentication Methods
+
+Conar supports several authentication methods to suit different use cases:
+
+### Email & Password
+
+Traditional email and password authentication:
+
+```typescript
+// Email and password login
+{
+  email: "user@example.com",
+  password: "your-secure-password"
+}
+```
+
+<Note>
+Email verification is not required by default, allowing for faster onboarding.
+</Note>
+
+### Social Authentication
+
+Sign in with your existing accounts:
+
+<CardGroup cols={2}>
+  <Card title="Google" icon="google">
+    Sign in with your Google account
+    
+    - OAuth 2.0 flow
+    - Account selection prompt
+    - Secure authorization
+  </Card>
+  
+  <Card title="GitHub" icon="github">
+    Sign in with your GitHub account
+    
+    - OAuth 2.0 flow
+    - Repository access (optional)
+    - Developer-friendly
+  </Card>
+</CardGroup>
+
+### Anonymous Authentication
+
+For temporary or guest access:
+
+- No account creation required
+- Quick access to features
+- Can be converted to full account later
+- Useful for testing and exploration
+
+### Bearer Token Authentication
+
+For API and programmatic access:
+
+- Generate access tokens
+- Use in API requests
+- Secure machine-to-machine communication
+- Ideal for automation and integrations
+
+## Two-Factor Authentication (2FA)
+
+Enhance your account security with two-factor authentication:
+
+<Steps>
+  <Step title="Enable 2FA">
+    Navigate to your account security settings and enable two-factor authentication.
+  </Step>
+  
+  <Step title="Configure Authenticator">
+    Scan the QR code with your authenticator app (Google Authenticator, Authy, etc.).
+  </Step>
+  
+  <Step title="Verify Setup">
+    Enter the verification code to confirm 2FA is working correctly.
+  </Step>
+  
+  <Step title="Save Backup Codes">
+    Store your backup codes in a safe place for account recovery.
+  </Step>
+</Steps>
+
+<Warning>
+Enable 2FA to significantly improve your account security. Always save your backup codes in a secure location.
+</Warning>
+
+## Session Management
+
+### Session Tracking
+
+Conar tracks important session information:
+
+- Active workspace (organization) ID
+- Last login method used
+- Desktop app version (when applicable)
+- Session creation and expiration
+
+### Cross-Domain Sessions
+
+In production environments:
+
+- Sessions work across subdomains
+- Seamless experience between web and API
+- Secure cookie handling
+- Domain-specific configuration
+
+### Session Security
+
+Sessions are protected with:
+
+- HTTP-only cookies
+- Secure cookie transmission (HTTPS)
+- Custom cookie prefix for isolation
+- Automatic session rotation
+
+## Password Management
+
+### Password Reset
+
+If you forget your password:
+
+<Steps>
+  <Step title="Request Reset">
+    Click "Forgot Password" on the login page and enter your email.
+  </Step>
+  
+  <Step title="Check Email">
+    You'll receive a password reset email with a secure link.
+  </Step>
+  
+  <Step title="Set New Password">
+    Click the link and enter your new password.
+  </Step>
+  
+  <Step title="Confirmation">
+    You'll receive a confirmation email once your password is reset.
+  </Step>
+</Steps>
+
+### Password Security
+
+<Tip>
+Use a strong, unique password for your Conar account. Consider using a password manager to generate and store secure passwords.
+</Tip>
+
+## Workspace Organizations
+
+Conar supports multi-workspace functionality:
+
+- Create and manage multiple workspaces
+- Invite team members to workspaces
+- Switch between active workspaces
+- Role-based workspace access
+- Workspace-specific sessions
+
+### Workspace Members
+
+Manage your team:
+
+- Send workspace invitations
+- Track member roles and permissions
+- Remove members when needed
+- View workspace activity
+
+## Desktop Authentication
+
+For Conar desktop application:
+
+- Seamless authentication flow
+- Desktop version tracking
+- File protocol support for local auth
+- Automatic version updates
+
+<Note>
+The desktop app automatically tracks your installed version for compatibility and update notifications.
+</Note>
+
+## API Authentication
+
+### Bearer Tokens
+
+Use bearer tokens for API requests:
+
+```bash
+curl -H "Authorization: Bearer YOUR_TOKEN" \
+  https://api.conar.app/endpoint
+```
+
+### Authentication Endpoints
+
+All authentication endpoints are available at:
+
+```
+https://api.conar.app/auth
+```
+
+Key endpoints include:
+
+- `/auth/sign-in` - Sign in with email/password
+- `/auth/sign-up` - Create new account
+- `/auth/sign-out` - End session
+- `/auth/reset-password` - Request password reset
+- `/auth/callback/*` - OAuth callbacks
+
+## Trusted Origins
+
+Conar allows authentication from:
+
+- Official web application
+- Desktop application (file:// protocol)
+- Development environments (localhost)
+- Test environments
+
+<Warning>
+Only authenticate through official Conar applications and domains. Never enter your credentials on untrusted sites.
+</Warning>
+
+## User Profile
+
+Your user profile includes:
+
+- Name and email
+- Stripe customer ID (for billing)
+- Account creation date
+- Desktop version (if using desktop app)
+- Associated workspaces
+
+### Email Updates
+
+When you update your email:
+
+- Profile is synchronized with marketing contacts
+- Billing information is updated
+- All active sessions remain valid
+- Notification preferences transfer
+
+## Error Handling
+
+Authentication errors are handled securely:
+
+- Invalid credentials return generic error messages
+- Failed attempts are logged for security
+- Rate limiting prevents brute force attacks
+- Critical errors trigger admin alerts
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Security Best Practices" icon="shield-check" href="/account/security">
+    Learn how to keep your account secure
+  </Card>
+  
+  <Card title="Subscription Plans" icon="credit-card" href="/account/subscription-plans">
+    Explore available subscription options
+  </Card>
+</CardGroup>

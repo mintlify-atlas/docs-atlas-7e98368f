@@ -1,0 +1,296 @@
+---
+title: Managing Queries
+description: Save, organize, and execute SQL queries in Conar
+---
+
+Conar provides a powerful query management system that lets you save, organize, and execute SQL queries across all your database connections.
+
+## Query Editor
+
+The SQL editor is the central workspace for writing and executing queries.
+
+### Writing Queries
+
+<Steps>
+  <Step title="Open SQL Editor">
+    Navigate to a database connection and click on the "SQL" tab to access the query editor.
+  </Step>
+
+  <Step title="Write Your Query">
+    Type your SQL query in the editor. The editor provides:
+    - Syntax highlighting for your database type
+    - Auto-completion for table and column names
+    - Multi-query support (separate queries with semicolons)
+  </Step>
+
+  <Step title="Execute Query">
+    - **Run single query**: Click the run button or press the keyboard shortcut
+    - **Run multiple queries**: Select specific queries to execute
+    - **Run all queries**: Execute all queries in the editor sequentially
+  </Step>
+
+  <Step title="View Results">
+    Query results appear below the editor with:
+    - Tabular data display
+    - Row counts and execution time
+    - Error messages if queries fail
+    - Export options for results
+  </Step>
+</Steps>
+
+## Saving Queries
+
+Save frequently used queries for quick access across devices.
+
+<Steps>
+  <Step title="Write Your Query">
+    Create the SQL query you want to save in the editor.
+  </Step>
+
+  <Step title="Click Save">
+    Click the save icon next to the query. Each query in a multi-query editor can be saved individually.
+  </Step>
+
+  <Step title="Access Saved Queries">
+    Saved queries appear in the queries list and sync across all your devices in real-time.
+  </Step>
+</Steps>
+
+### Query Sync
+
+Queries are automatically synchronized:
+
+- **Cloud sync** - Queries sync across all devices
+- **Real-time updates** - Changes propagate immediately
+- **Offline support** - Queries remain available offline
+- **Conflict resolution** - Automatic handling of concurrent edits
+
+The sync system uses the same infrastructure as connection sync, ensuring your queries are always up to date.
+
+## Multi-Query Management
+
+The editor supports multiple queries in a single session:
+
+### Query Zones
+
+Each query is displayed in its own "zone" with:
+
+- **Query number** - Sequential numbering for easy reference
+- **Checkbox** - Select queries for batch operations
+- **Save button** - Save individual queries
+- **Copy button** - Copy query to clipboard
+- **Run button** - Execute specific query
+
+**Example:**
+```sql
+-- Query 1
+SELECT * FROM users LIMIT 10;
+
+-- Query 2
+SELECT COUNT(*) FROM orders;
+
+-- Query 3
+SELECT * FROM products WHERE price > 100;
+```
+
+Each query can be saved, run, or copied independently.
+
+### Selecting Queries
+
+Use checkboxes to select multiple queries for:
+
+- Batch execution
+- Bulk deletion
+- Mass export
+- Copying multiple queries
+
+## Query Organization
+
+### Listing Saved Queries
+
+Access all your saved queries:
+
+- Sorted by creation date (newest first)
+- Filtered by connection
+- Searchable by query content
+- Quick preview of query text
+
+### Query Metadata
+
+Each saved query includes:
+
+- **Connection** - Which database it belongs to
+- **Created date** - When the query was saved
+- **Last updated** - Most recent modification
+- **Query content** - The full SQL text
+
+## Exploring Tables
+
+Browse your database schema before writing queries.
+
+### Table Explorer
+
+<Steps>
+  <Step title="Navigate to Tables">
+    Click on the "Tables" tab to see all tables in your database.
+  </Step>
+
+  <Step title="View Table Structure">
+    Click on a table to view:
+    - Column names and data types
+    - Primary keys and indexes
+    - Foreign key relationships
+    - Constraints and defaults
+  </Step>
+
+  <Step title="Preview Data">
+    Click "Preview" to see sample rows from the table without writing a query.
+  </Step>
+
+  <Step title="Generate Queries">
+    Use table context menus to:
+    - Generate SELECT queries
+    - Create INSERT templates
+    - Build UPDATE statements
+    - Generate schema definitions
+  </Step>
+</Steps>
+
+## Query Results
+
+### Viewing Results
+
+After executing a query:
+
+- **Data table** - Results displayed in a sortable, filterable table
+- **Row count** - Number of rows returned
+- **Execution time** - How long the query took
+- **Multiple result sets** - For queries returning multiple datasets
+
+### Exporting Results
+
+Export query results to various formats:
+
+- **CSV** - Comma-separated values
+- **JSON** - JavaScript Object Notation
+- **SQL** - INSERT statements
+- **Copy to clipboard** - Quick copy for pasting elsewhere
+
+## Advanced Features
+
+<Accordion title="Query Parameters">
+  Use parameters in your queries for dynamic execution:
+
+  ```sql
+  SELECT * FROM users WHERE created_at > :start_date;
+  ```
+
+  Parameters allow you to:
+  - Reuse queries with different values
+  - Prevent SQL injection
+  - Create query templates
+</Accordion>
+
+<Accordion title="Query Performance">
+  Monitor and optimize query performance:
+
+  ### Execution Time
+  - Track how long queries take to execute
+  - Compare performance across database types
+  - Identify slow queries for optimization
+
+  ### Query Plans
+  - View execution plans (database-dependent)
+  - Understand how the database processes your query
+  - Identify missing indexes or inefficient joins
+
+  ### Optimization Tips
+  - Add indexes for frequently filtered columns
+  - Use EXPLAIN to analyze query plans
+  - Limit result sets with WHERE clauses
+  - Use AI to suggest performance improvements
+</Accordion>
+
+<Accordion title="Removing Queries">
+  To delete saved queries:
+
+  1. Navigate to the saved queries list
+  2. Select the query to remove
+  3. Click the delete icon
+  4. Confirm deletion
+
+  **Note:** Deleted queries are removed across all devices through sync.
+</Accordion>
+
+<Accordion title="Query Formatting">
+  Format your SQL for better readability:
+
+  ### Manual Formatting
+  - Use consistent indentation (2 or 4 spaces)
+  - Break long queries into multiple lines
+  - Add comments for complex logic
+  - Align columns in SELECT statements
+
+  ### Auto-Formatting
+  - Use AI to format existing queries
+  - Request specific formatting styles
+  - Apply consistent formatting across all queries
+
+  **Example:**
+  ```sql
+  SELECT
+    u.id,
+    u.name,
+    u.email,
+    COUNT(o.id) AS order_count
+  FROM
+    users u
+    LEFT JOIN orders o ON u.id = o.user_id
+  WHERE
+    u.created_at >= '2024-01-01'
+  GROUP BY
+    u.id, u.name, u.email
+  ORDER BY
+    order_count DESC;
+  ```
+</Accordion>
+
+## Integration with AI Features
+
+Combine query management with AI capabilities:
+
+- **Generate queries** - Use AI to create queries, then save them
+- **Fix errors** - AI can fix broken saved queries
+- **Optimize** - Request AI optimization for slow queries
+- **Explain** - Ask AI to explain complex saved queries
+
+See [Using AI Features](/guides/using-ai-features) for more details.
+
+## Best Practices
+
+### Organizing Queries
+
+1. **Descriptive names** - Use clear, descriptive query names
+2. **Add comments** - Document complex queries with SQL comments
+3. **Version control** - Save iterations of evolving queries
+4. **Group by purpose** - Organize queries by task or feature
+
+### Query Safety
+
+1. **Test first** - Test queries on development databases
+2. **Use transactions** - Wrap modifications in transactions
+3. **Limit results** - Add LIMIT clauses to large queries
+4. **Read-only users** - Use read-only credentials for reporting queries
+
+### Performance
+
+1. **Index appropriately** - Add indexes for commonly filtered columns
+2. **Avoid SELECT *** - Request only needed columns
+3. **Use pagination** - Limit and offset for large datasets
+4. **Monitor execution time** - Track and optimize slow queries
+
+## Next Steps
+
+- Leverage [AI features](/guides/using-ai-features) to generate queries
+- Learn about [creating connections](/guides/creating-connections)
+- Configure [SSL certificates](/guides/ssl-certificates) for secure connections

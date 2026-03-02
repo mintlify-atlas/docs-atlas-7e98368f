@@ -1,0 +1,430 @@
+---
+title: Installation
+description: Download and install Conar on macOS, Windows, Linux, or use the web app. Choose the platform that works best for you.
+---
+
+## Choose Your Platform
+
+Conar is available as a native desktop application for macOS, Windows, and Linux, as well as a web application accessible from any browser.
+
+<CardGroup cols={2}>
+  <Card
+    title="Desktop App"
+    icon="desktop"
+  >
+    Native application with full offline support and optimal performance
+  </Card>
+  <Card
+    title="Web App"
+    icon="globe"
+  >
+    Browser-based access with no installation required
+  </Card>
+</CardGroup>
+
+---
+
+## Desktop Application
+
+The desktop app is built with Electron and distributed via ToDesktop, providing native performance and offline capabilities.
+
+<Tabs>
+  <Tab title="macOS">
+    ### Direct Download
+
+    Download the appropriate version for your Mac:
+
+    <CardGroup cols={2}>
+      <Card
+        title="Apple Silicon"
+        icon="apple"
+        href="https://download.conar.app/mac/dmg/arm64"
+      >
+        For M1, M2, M3, and newer Macs
+      </Card>
+      <Card
+        title="Intel"
+        icon="apple"
+        href="https://download.conar.app/mac/dmg/x64"
+      >
+        For Intel-based Macs
+      </Card>
+    </CardGroup>
+
+    **Installation Steps:**
+
+    <Steps>
+      <Step title="Download the DMG file">
+        Click the download link above for your Mac's processor type.
+      </Step>
+      <Step title="Open the DMG file">
+        Double-click the downloaded `.dmg` file to mount it.
+      </Step>
+      <Step title="Drag to Applications">
+        Drag the Conar app icon to your Applications folder.
+      </Step>
+      <Step title="Launch Conar">
+        Open Conar from your Applications folder or Spotlight.
+      </Step>
+    </Steps>
+
+    <Note>
+      On first launch, you may need to right-click the app and select "Open" to bypass macOS Gatekeeper.
+    </Note>
+
+    ### Homebrew Installation
+
+    For developers who prefer package managers:
+
+    ```bash
+    brew install --cask conar
+    ```
+
+    **Update via Homebrew:**
+
+    ```bash
+    brew upgrade conar
+    ```
+
+    ### System Requirements
+
+    - macOS 10.13 (High Sierra) or later
+    - 200 MB free disk space
+    - Internet connection for cloud sync and AI features
+
+    ### Built With ToDesktop
+
+    The macOS app is built using ToDesktop with the following configuration:
+
+    ```json
+    {
+      "appId": "com.wannabespace.conar",
+      "category": "public.app-category.developer-tools",
+      "appProtocolScheme": "conar"
+    }
+    ```
+
+    This ensures native macOS integration including:
+    - App protocol handlers (`conar://`)
+    - Native notifications
+    - System tray integration
+    - Auto-updates
+  </Tab>
+
+  <Tab title="Windows">
+    ### Download
+
+    <Card
+      title="Windows Installer"
+      icon="windows"
+      href="https://download.conar.app/windows/nsis/x64"
+    >
+      Download for Windows 10/11 (64-bit)
+    </Card>
+
+    **Installation Steps:**
+
+    <Steps>
+      <Step title="Download the installer">
+        Click the download link above to get the `.exe` installer.
+      </Step>
+      <Step title="Run the installer">
+        Double-click the downloaded file to start installation.
+      </Step>
+      <Step title="Follow the setup wizard">
+        Click "Next" through the installation steps. The default settings work for most users.
+      </Step>
+      <Step title="Launch Conar">
+        The app will launch automatically after installation, or find it in your Start Menu.
+      </Step>
+    </Steps>
+
+    <Warning>
+      Windows Defender SmartScreen may show a warning on first install. Click "More info" and then "Run anyway" to proceed.
+    </Warning>
+
+    ### System Requirements
+
+    - Windows 10 version 1809 or later
+    - Windows 11 (all versions)
+    - 64-bit processor
+    - 200 MB free disk space
+    - Internet connection for cloud sync and AI features
+
+    ### Publisher Information
+
+    ```json
+    {
+      "publisherName": ["Wannabe Space, LLC"],
+      "copyright": "Copyright © 2024 Wannabe Space, LLC"
+    }
+    ```
+
+    ### Auto-Updates
+
+    The Windows app includes automatic update functionality. You'll be notified when new versions are available.
+  </Tab>
+
+  <Tab title="Linux">
+    ### Package Downloads
+
+    Choose the package format that matches your Linux distribution:
+
+    <CardGroup cols={3}>
+      <Card
+        title="Debian/Ubuntu (.deb)"
+        icon="linux"
+        href="https://download.conar.app/linux/deb/x64"
+      >
+        For Debian, Ubuntu, and derivatives
+      </Card>
+      <Card
+        title="AppImage"
+        icon="linux"
+        href="https://download.conar.app/linux/appImage/x64"
+      >
+        Universal Linux package
+      </Card>
+      <Card
+        title="Fedora/RHEL (.rpm)"
+        icon="linux"
+        href="https://download.conar.app/linux/rpm/x64"
+      >
+        For Fedora, RHEL, and derivatives
+      </Card>
+    </CardGroup>
+
+    ### Debian/Ubuntu Installation
+
+    ```bash
+    # Download the .deb package
+    wget https://download.conar.app/linux/deb/x64 -O conar.deb
+
+    # Install the package
+    sudo dpkg -i conar.deb
+
+    # Install dependencies if needed
+    sudo apt-get install -f
+
+    # Launch Conar
+    conar
+    ```
+
+    ### AppImage Installation
+
+    ```bash
+    # Download AppImage
+    wget https://download.conar.app/linux/appImage/x64 -O Conar.AppImage
+
+    # Make it executable
+    chmod +x Conar.AppImage
+
+    # Run the app
+    ./Conar.AppImage
+    ```
+
+    <Tip>
+      You can move the AppImage to `~/.local/bin/` or `/usr/local/bin/` to run it from anywhere.
+    </Tip>
+
+    ### RPM Installation (Fedora/RHEL)
+
+    ```bash
+    # Download the .rpm package
+    wget https://download.conar.app/linux/rpm/x64 -O conar.rpm
+
+    # Install the package
+    sudo rpm -i conar.rpm
+
+    # Or using dnf
+    sudo dnf install ./conar.rpm
+
+    # Launch Conar
+    conar
+    ```
+
+    ### Arch Linux (AUR)
+
+    For Arch Linux users, Conar is available on the AUR:
+
+    ```bash
+    # Using yay
+    yay -S conar-bin
+
+    # Or using paru
+    paru -S conar-bin
+    ```
+
+    **AUR Package Details:**
+
+    ```bash
+    Package: conar-bin
+    Description: AI-powered tool for working with Postgres, MySQL, MSSQL and ClickHouse
+    License: AGPL-3.0-or-later
+    Maintainer: Bouteiller a2n Alan <hi@a2n.dev>
+    ```
+
+    ### System Requirements
+
+    - 64-bit Linux distribution
+    - X11 or Wayland display server
+    - 200 MB free disk space
+    - Internet connection for cloud sync and AI features
+
+    **Dependencies (automatically installed):**
+
+    The Debian package includes these dependencies:
+
+    ```text
+    alsa-lib, at-spi2-core, cairo, dbus, expat, gcc-libs,
+    glib2, glibc, gtk3, hicolor-icon-theme, libcups,
+    libx11, libxcb, libxcomposite, libxdamage, libxext,
+    libxfixes, libxkbcommon, libxrandr, mesa, nspr,
+    nss, pango, systemd-libs
+    ```
+
+    ### Desktop Integration
+
+    After installation, Conar will appear in your application menu under the "Development" category.
+
+    ```bash
+    # Command line usage
+    conar
+
+    # Or use the application launcher
+    # The .desktop file is installed to:
+    /usr/share/applications/conar.desktop
+    ```
+
+    ### Troubleshooting
+
+    If you encounter issues launching the app:
+
+    ```bash
+    # Check if installed correctly
+    which conar
+
+    # Run with verbose output
+    conar --verbose
+
+    # Check system logs
+    journalctl -xe | grep conar
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Web Application
+
+Access Conar directly from your browser without any installation.
+
+<Card
+  title="Launch Conar Web App"
+  icon="globe"
+  href="https://conar.app"
+>
+  Open in your browser now
+</Card>
+
+### Browser Requirements
+
+For the best experience, use a modern browser:
+
+<CardGroup cols={4}>
+  <Card title="Chrome" icon="chrome">
+    Version 90+
+  </Card>
+  <Card title="Firefox" icon="firefox">
+    Version 88+
+  </Card>
+  <Card title="Safari" icon="safari">
+    Version 14+
+  </Card>
+  <Card title="Edge" icon="edge">
+    Version 90+
+  </Card>
+</CardGroup>
+
+### Web App Features
+
+The web app includes most desktop features:
+
+<Check>Full database connection management</Check>
+<Check>SQL query execution and AI assistance</Check>
+<Check>Table browsing and data filtering</Check>
+<Check>Cloud sync across devices</Check>
+<Warning>No offline support - requires internet connection</Warning>
+
+### Progressive Web App (PWA)
+
+You can install the web app as a PWA for a more app-like experience:
+
+<Steps>
+  <Step title="Open Conar in your browser">
+    Navigate to [https://conar.app](https://conar.app)
+  </Step>
+  <Step title="Install the PWA">
+    - **Chrome/Edge**: Click the install icon in the address bar
+    - **Safari**: Click Share → Add to Home Screen
+    - **Firefox**: Look for the install prompt
+  </Step>
+  <Step title="Launch from your home screen">
+    The app will now appear as a standalone application
+  </Step>
+</Steps>
+
+---
+
+## Version Information
+
+The desktop apps are built and distributed using:
+
+- **Build System**: ToDesktop (Electron-based)
+- **Node Version**: 24.6.0
+- **Package Manager**: pnpm 10.30.3
+- **Auto-updates**: Enabled
+
+### Current Version
+
+To check your current version:
+
+<Tabs>
+  <Tab title="Desktop App">
+    Click **Conar** → **About Conar** in the menu bar
+  </Tab>
+  <Tab title="Web App">
+    Click your profile icon → **About**
+  </Tab>
+</Tabs>
+
+### Update Frequency
+
+Conar receives regular updates with new features and bug fixes. Desktop apps check for updates automatically on launch.
+
+---
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Quickstart Guide"
+    icon="rocket"
+    href="/quickstart"
+  >
+    Create your first database connection
+  </Card>
+  <Card
+    title="GitHub Repository"
+    icon="github"
+    href="https://github.com/wannabespace/conar"
+  >
+    View source code and report issues
+  </Card>
+</CardGroup>
+
+---
+
+<Note>
+  Need help? Join our [Discord community](https://discord.gg/XweDPUVadR) or check the [GitHub issues](https://github.com/wannabespace/conar/issues).
+</Note>

@@ -1,0 +1,381 @@
+---
+title: 'Connections'
+description: 'Manage database connections'
+---
+
+## Overview
+
+The Connections API allows you to manage database connections. All connection strings are encrypted at rest using user-specific secrets.
+
+## Endpoints
+
+### Create Connection
+
+Create a new database connection.
+
+<CodeGroup>
+```bash Request
+POST /rpc/connections.create
+Content-Type: application/json
+
+{
+  "name": "Production DB",
+  "type": "postgres",
+  "connectionString": "postgresql://user:pass@host:5432/db",
+  "syncType": "cloud",
+  "isPasswordExists": true,
+  "label": "prod",
+  "color": "#FF5733"
+}
+```
+
+```json Response
+{}
+```
+</CodeGroup>
+
+<ParamField path="name" type="string" required>
+  Human-readable name for the connection
+</ParamField>
+
+<ParamField path="type" type="enum" required>
+  Database type. One of: `postgres`, `mysql`, `sqlite`, `mongodb`, etc.
+</ParamField>
+
+<ParamField path="connectionString" type="string" required>
+  Database connection string (will be encrypted)
+</ParamField>
+
+<ParamField path="syncType" type="enum" required>
+  Sync strategy. One of:
+  - `cloud` - Full sync including password
+  - `cloudWithoutPassword` - Sync without password
+  - `local` - Local only, no cloud sync
+</ParamField>
+
+<ParamField path="isPasswordExists" type="boolean" required>
+  Whether the connection string includes a password
+</ParamField>
+
+<ParamField path="label" type="string">
+  Optional label for categorization
+</ParamField>
+
+<ParamField path="color" type="string">
+  Optional color code for UI display
+</ParamField>
+
+### List Connections
+
+Retrieve all connections for the authenticated user.
+
+<CodeGroup>
+```bash Request
+POST /rpc/connections.list
+Content-Type: application/json
+
+{}
+```
+
+```json Response
+[
+  {
+    "id": "01932e8f-5f5e-7b8a-9f3d-4c5e6a7b8c9d",
+    "name": "Production DB",
+    "type": "postgres",
+    "connectionString": "postgresql://user:pass@host:5432/db",
+    "isPasswordExists": true,
+    "label": "prod",
+    "color": "#FF5733",
+    "createdAt": "2024-01-15T10:30:00.000Z",
+    "updatedAt": "2024-01-15T10:30:00.000Z"
+  }
+]
+```
+</CodeGroup>
+
+<ResponseField name="id" type="string">
+  UUIDv7 identifier for the connection
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  Connection name
+</ResponseField>
+
+<ResponseField name="type" type="string">
+  Database type (e.g., "postgres", "mysql")
+</ResponseField>
+
+<ResponseField name="connectionString" type="string">
+  Decrypted connection string
+</ResponseField>
+
+<ResponseField name="isPasswordExists" type="boolean">
+  Whether password exists in connection string
+</ResponseField>
+
+<ResponseField name="createdAt" type="string">
+  ISO 8601 timestamp
+</ResponseField>
+
+<ResponseField name="updatedAt" type="string">
+  ISO 8601 timestamp
+</ResponseField>
+
+### Update Connection
+
+Update an existing connection.
+
+<CodeGroup>
+```bash Request
+POST /rpc/connections.update
+Content-Type: application/json
+
+{
+  "id": "01932e8f-5f5e-7b8a-9f3d-4c5e6a7b8c9d",
+  "name": "Production Database",
+  "label": "production"
+}
+```
+
+```json Response
+{}
+```
+</CodeGroup>
+
+<ParamField path="id" type="string" required>
+  UUID of the connection to update
+</ParamField>
+
+<ParamField path="name" type="string">
+  Updated name
+</ParamField>
+
+<ParamField path="connectionString" type="string">
+  Updated connection string
+</ParamField>
+
+<ParamField path="syncType" type="enum">
+  Updated sync type
+</ParamField>
+
+<ParamField path="label" type="string">
+  Updated label
+</ParamField>
+
+<ParamField path="color" type="string">
+  Updated color
+</ParamField>
+
+<Note>
+When updating `syncType` to a value other than `cloud`, the password will be automatically removed from the connection string.
+</Note>
+
+### Remove Connection
+
+Delete one or more connections.
+
+<CodeGroup>
+```bash Single Connection
+POST /rpc/connections.remove
+Content-Type: application/json
+
+{
+  "id": "01932e8f-5f5e-7b8a-9f3d-4c5e6a7b8c9d"
+}
+```
+
+```bash Multiple Connections
+POST /rpc/connections.remove
+Content-Type: application/json
+
+[
+  {"id": "01932e8f-5f5e-7b8a-9f3d-4c5e6a7b8c9d"},
+  {"id": "01932f1a-6a7b-8c9d-0e1f-2a3b4c5d6e7f"}
+]
+```
+
+```json Response
+{}
+```
+</CodeGroup>
+
+<ParamField path="id" type="string" required>
+  UUID of the connection to remove
+</ParamField>
+
+### Sync Connections
+
+Synchronize connections between local and cloud storage.
+
+<CodeGroup>
+```bash Request
+POST /rpc/connections.sync
+Content-Type: application/json
+
+[
+  {
+    "id": "01932e8f-5f5e-7b8a-9f3d-4c5e6a7b8c9d",
+    "updatedAt": "2024-01-15T10:30:00.000Z"
+  }
+]
+```
+
+```json Response
+[
+  {
+    "type": "update",
+    "value": {
+      "id": "01932e8f-5f5e-7b8a-9f3d-4c5e6a7b8c9d",
+      "name": "Production DB",
+      "type": "postgres",
+      "connectionString": "postgresql://user:pass@host:5432/db",
+      "createdAt": "2024-01-15T10:30:00.000Z",
+      "updatedAt": "2024-01-15T10:35:00.000Z"
+    }
+  },
+  {
+    "type": "insert",
+    "value": {
+      "id": "01932f1a-6a7b-8c9d-0e1f-2a3b4c5d6e7f",
+      "name": "Staging DB",
+      "type": "postgres",
+      "createdAt": "2024-01-16T12:00:00.000Z",
+      "updatedAt": "2024-01-16T12:00:00.000Z"
+    }
+  },
+  {
+    "type": "delete",
+    "value": "01932abc-def0-1234-5678-9abcdef01234"
+  }
+]
+```
+</CodeGroup>
+
+<ParamField path="[].id" type="string" required>
+  UUID of the local connection
+</ParamField>
+
+<ParamField path="[].updatedAt" type="string" required>
+  ISO 8601 timestamp of last local update
+</ParamField>
+
+<ResponseField name="[].type" type="enum">
+  Sync operation type:
+  - `insert` - New connection from server
+  - `update` - Updated connection from server
+  - `delete` - Connection deleted on server (only returns UUID)
+</ResponseField>
+
+<ResponseField name="[].value" type="object | string">
+  Connection object for `insert`/`update`, or UUID string for `delete`
+</ResponseField>
+
+## Data Model
+
+### Connection Object
+
+```typescript
+interface Connection {
+  id: string              // UUIDv7
+  userId: string          // UUIDv7, foreign key to users
+  type: ConnectionType    // Database type enum
+  name: string            // Display name
+  connectionString: string // Encrypted connection string
+  label?: string          // Optional label
+  color?: string          // Optional color code
+  isPasswordExists: boolean
+  syncType: SyncType      // Sync strategy
+  createdAt: Date
+  updatedAt: Date
+}
+```
+
+### Connection Types
+
+```typescript
+enum ConnectionType {
+  postgres = "postgres",
+  mysql = "mysql",
+  sqlite = "sqlite",
+  mongodb = "mongodb",
+  // ... other supported types
+}
+```
+
+### Sync Types
+
+```typescript
+enum SyncType {
+  cloud = "cloud",                          // Full cloud sync
+  cloudWithoutPassword = "cloudWithoutPassword", // Cloud sync without password
+  local = "local"                           // Local only
+}
+```
+
+## Security
+
+### Encryption
+
+All connection strings are encrypted using AES-256-GCM with user-specific secrets:
+
+1. Each user has a unique encryption secret
+2. Connection strings are encrypted before storage
+3. Decryption happens server-side when retrieving connections
+4. Passwords can be optionally excluded from cloud sync
+
+### Password Handling
+
+When `syncType` is `cloudWithoutPassword`, the password is stripped from the connection string before encryption:
+
+```typescript
+if (syncType === 'cloudWithoutPassword') {
+  connectionString.password = ''
+}
+```
+
+## Error Responses
+
+### Validation Error
+
+```json
+{
+  "error": {
+    "code": "BAD_REQUEST",
+    "message": "connectionString: must be a valid URL"
+  }
+}
+```
+
+### Not Found
+
+```json
+{
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "Connection not found"
+  }
+}
+```
+
+### Decryption Error
+
+```json
+{
+  "error": {
+    "code": "INTERNAL_SERVER_ERROR",
+    "message": "Failed to decrypt connection string"
+  }
+}
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Queries API" icon="code" href="/api/queries">
+    Create and manage saved queries
+  </Card>
+  <Card title="AI Chat" icon="comments" href="/api/chats">
+    Use AI to generate SQL queries
+  </Card>
+</CardGroup>

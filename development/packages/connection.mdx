@@ -1,0 +1,385 @@
+---
+title: Connection Package
+description: Database connection utilities and SSL configuration
+---
+
+The `@conar/connection` package provides utilities for parsing database connection strings and handling SSL configurations across different database types.
+
+## Installation
+
+This package is internal to the monorepo:
+
+```json
+{
+  "dependencies": {
+    "@conar/connection": "workspace:*"
+  }
+}
+```
+
+## Package Structure
+
+```
+packages/connection/
+├── src/
+│   ├── index.ts                      # Main exports
+│   ├── parse-connection-string.ts    # Connection string parser
+│   ├── parse-connection-string.test.ts
+│   ├── read-ssl-files.ts             # SSL file loader
+│   ├── server.ts                     # Server-side exports
+│   └── ssl/
+│       ├── pg.ts                     # PostgreSQL SSL
+│       ├── mysql.ts                  # MySQL SSL
+│       └── mssql.ts                  # MSSQL SSL
+└── package.json
+```
+
+## Exports
+
+The package provides multiple export paths:
+
+```typescript
+// Main exports
+import { parseConnectionString } from '@conar/connection'
+import { readSSLFiles } from '@conar/connection'
+
+// Database-specific SSL
+import * from '@conar/connection/ssl/pg'
+import * from '@conar/connection/ssl/mysql'
+import * from '@conar/connection/ssl/mssql'
+
+// Server-side only
+import * from '@conar/connection/server'
+```
+
+Defined in `package.json:5`:
+
+```json
+{
+  "exports": {
+    ".": "./src/index.ts",
+    "./ssl/pg": "./src/ssl/pg.ts",
+    "./ssl/mysql": "./src/ssl/mysql.ts",
+    "./ssl/mssql": "./src/ssl/mssql.ts",
+    "./server": "./src/server.ts"
+  }
+}
+```
+
+## Connection String Parsing
+
+### parseConnectionString()
+
+Parses database connection strings into structured configuration objects.
+
+**Signature:**
+
+```typescript
+function parseConnectionString(connectionString: string): Config
+
+interface Config {
+  user?: string
+  password?: string
+  host: string
+  port?: number
+  database?: string
+  searchParams: URLSearchParams
+}
+```
+
+**Usage:**
+
+```typescript
+import { parseConnectionString } from '@conar/connection'
+
+const config = parseConnectionString(
+  'postgresql://admin:secret@db.example.com:5432/myapp?ssl=true'
+)
+
+console.log(config)
+// {
+//   user: 'admin',
+//   password: 'secret',
+//   host: 'db.example.com',
+//   port: 5432,
+//   database: 'myapp',
+//   searchParams: URLSearchParams { 'ssl' => 'true' }
+// }
+```
+
+**Implementation:**
+
+From `packages/connection/src/parse-connection-string.ts:12`:
+
+```typescript
+import { SafeURL } from '@conar/shared/utils/safe-url'
+
+export function parseConnectionString(connectionString: string): Config {
+  const parsed = new SafeURL(connectionString)
+
+  return {
+    user: parsed.username || undefined,
+    password: parsed.password || undefined,
+    host: parsed.hostname,
+    port: parsed.port ? Number.parseInt(parsed.port, 10) : undefined,
+    database: parsed.pathname && parsed.pathname !== '/' 
+      ? parsed.pathname.slice(1) 
+      : undefined,
+    searchParams: parsed.searchParams,
+  }
+}
+```
+
+**Examples:**
+
+```typescript
+// PostgreSQL
+parseConnectionString('postgresql://localhost:5432/mydb')
+// { host: 'localhost', port: 5432, database: 'mydb', ... }
+
+// MySQL with auth
+parseConnectionString('mysql://root:password@localhost/test')
+// { user: 'root', password: 'password', host: 'localhost', database: 'test', ... }
+
+// MSSQL with parameters
+parseConnectionString('mssql://localhost/db?encrypt=true&trustServerCertificate=true')
+// { host: 'localhost', database: 'db', searchParams: { encrypt, trust... }, ... }
+
+// ClickHouse
+parseConnectionString('clickhouse://localhost:8123/analytics')
+// { host: 'localhost', port: 8123, database: 'analytics', ... }
+```
+
+## SSL Configuration
+
+### readSSLFiles()
+
+Reads SSL certificate files from the filesystem.
+
+**Signature:**
+
+```typescript
+function readSSLFiles<T extends BaseSSLConfig>(ssl: T): T
+
+interface BaseSSLConfig {
+  cert?: unknown
+  key?: unknown
+  ca?: unknown
+}
+```
+
+**Usage:**
+
+```typescript
+import { readSSLFiles } from '@conar/connection'
+
+const sslConfig = {
+  cert: '/path/to/client-cert.pem',
+  key: '/path/to/client-key.pem',
+  ca: '/path/to/ca-cert.pem',
+}
+
+const loadedSSL = readSSLFiles(sslConfig)
+// SSL files are now loaded as strings
+```
+
+**Implementation:**
+
+From `packages/connection/src/read-ssl-files.ts:9`:
+
+```typescript
+import fs from 'node:fs'
+
+export function readSSLFiles<T extends BaseSSLConfig>(ssl: T): T {
+  const cert = typeof ssl.cert === 'string' 
+    ? fs.readFileSync(ssl.cert).toString() 
+    : ssl.cert
+  const key = typeof ssl.key === 'string' 
+    ? fs.readFileSync(ssl.key).toString() 
+    : ssl.key
+  const ca = typeof ssl.ca === 'string' 
+    ? fs.readFileSync(ssl.ca).toString() 
+    : ssl.ca
+
+  return {
+    ...ssl,
+    ...(cert ? { cert } : {}),
+    ...(key ? { key } : {}),
+    ...(ca ? { ca } : {}),
+  }
+}
+```
+
+**Features:**
+
+- Only reads files if the value is a string path
+- Preserves existing non-string values
+- Omits undefined values from result
+- Type-safe with generics
+
+## Database-Specific SSL
+
+Each database has specific SSL configuration needs:
+
+### PostgreSQL SSL
+
+```typescript
+import { pgSSLConfig } from '@conar/connection/ssl/pg'
+import { Client } from 'pg'
+
+const client = new Client({
+  ...config,
+  ssl: pgSSLConfig({
+    cert: '/path/to/cert.pem',
+    key: '/path/to/key.pem',
+    ca: '/path/to/ca.pem',
+  }),
+})
+```
+
+### MySQL SSL
+
+```typescript
+import { mysqlSSLConfig } from '@conar/connection/ssl/mysql'
+import mysql from 'mysql2'
+
+const connection = mysql.createConnection({
+  ...config,
+  ssl: mysqlSSLConfig({
+    cert: '/path/to/cert.pem',
+    key: '/path/to/key.pem',
+    ca: '/path/to/ca.pem',
+  }),
+})
+```
+
+### MSSQL SSL
+
+```typescript
+import { mssqlSSLConfig } from '@conar/connection/ssl/mssql'
+import sql from 'mssql'
+
+const pool = new sql.ConnectionPool({
+  ...config,
+  options: {
+    encrypt: true,
+    ...mssqlSSLConfig({
+      cert: '/path/to/cert.pem',
+      key: '/path/to/key.pem',
+    }),
+  },
+})
+```
+
+## Real-World Example
+
+Complete example of parsing and connecting:
+
+```typescript
+import { parseConnectionString, readSSLFiles } from '@conar/connection'
+import { decrypt } from '@conar/shared/utils/encryption'
+import { Client } from 'pg'
+
+// User's encrypted connection string
+const encryptedConnectionString = '...' // From database
+const userPassword = 'user-password'
+
+// Decrypt connection string
+const connectionString = decrypt({
+  encryptedText: encryptedConnectionString,
+  secret: userPassword,
+})
+
+// Parse connection details
+const config = parseConnectionString(connectionString)
+
+// Check for SSL in search params
+const useSSL = config.searchParams.get('ssl') === 'true'
+
+let sslConfig
+if (useSSL) {
+  sslConfig = readSSLFiles({
+    cert: config.searchParams.get('sslcert') || undefined,
+    key: config.searchParams.get('sslkey') || undefined,
+    ca: config.searchParams.get('sslrootcert') || undefined,
+  })
+}
+
+// Create database connection
+const client = new Client({
+  user: config.user,
+  password: config.password,
+  host: config.host,
+  port: config.port,
+  database: config.database,
+  ssl: sslConfig,
+})
+
+await client.connect()
+```
+
+## Testing
+
+Run package tests:
+
+```bash
+cd packages/connection
+bun test
+```
+
+### Test Coverage
+
+From `packages/connection/src/parse-connection-string.test.ts`:
+
+```typescript
+import { describe, expect, test } from 'bun:test'
+import { parseConnectionString } from './parse-connection-string'
+
+describe('parseConnectionString', () => {
+  test('handles all components', () => {
+    const result = parseConnectionString(
+      'postgresql://user:pass@localhost:5432/db?ssl=true'
+    )
+    expect(result.user).toBe('user')
+    expect(result.password).toBe('pass')
+    expect(result.host).toBe('localhost')
+    expect(result.port).toBe(5432)
+    expect(result.database).toBe('db')
+    expect(result.searchParams.get('ssl')).toBe('true')
+  })
+})
+```
+
+## Dependencies
+
+```json
+{
+  "dependencies": {
+    "@conar/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/mssql": "catalog:",
+    "@types/pg": "catalog:",
+    "mssql": "catalog:",
+    "mysql2": "catalog:"
+  }
+}
+```
+
+## Type Checking
+
+```bash
+cd packages/connection
+pnpm run check-types
+```
+
+## Related Packages
+
+<CardGroup cols={2}>
+  <Card title="Shared Package" icon="box" href="/development/packages/shared">
+    Encryption and utilities
+  </Card>
+  <Card title="API Server" icon="server" href="/development/architecture">
+    How connections are used
+  </Card>
+</CardGroup>

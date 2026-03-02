@@ -1,0 +1,187 @@
+---
+title: AI Assistance
+description: Leverage AI to write, update, and optimize your SQL queries with Claude, GPT, and Gemini
+icon: sparkles
+---
+
+Conar integrates powerful AI capabilities to help you write better SQL queries faster. The AI assistance feature supports multiple AI providers including Anthropic Claude, OpenAI GPT, Google Gemini, and XAI.
+
+## Supported AI Providers
+
+Conar integrates with the following AI providers through the AI SDK:
+
+- **Anthropic Claude** - Claude Sonnet 4.5 and Claude 3.5 Haiku
+- **OpenAI** - GPT-4.1 Nano and other GPT models
+- **Google Gemini** - Gemini 2.0 Flash
+- **XAI** - Grok 3 Mini
+
+The AI features are powered by the [AI SDK](https://sdk.vercel.ai/docs) and require an active subscription to use.
+
+## AI-Powered Query Updates
+
+The most powerful AI feature in Conar is the ability to update existing SQL queries using natural language prompts.
+
+### How to Update SQL with AI
+
+1. **Open the SQL Runner** for your database connection
+2. **Write or select a SQL query** in the editor
+3. **Press `Ctrl+K` (or `Cmd+K` on Mac)** to activate the AI assistant
+4. **Type your prompt** describing how you want to update the query
+5. **Press Enter** to generate the updated SQL
+6. **Review the diff** showing your original query vs. the AI-generated update
+7. **Click Apply** to accept the changes
+
+<Note>
+The AI assistant is context-aware and has access to your database schema, table names, and column information to generate accurate queries.
+</Note>
+
+### Example Workflow
+
+```sql
+-- Original query
+SELECT * FROM users;
+```
+
+**AI Prompt:** "Add a WHERE clause to filter active users only"
+
+```sql
+-- Updated query
+SELECT * FROM users WHERE status = 'active';
+```
+
+### AI Context
+
+When you use the AI assistant, Conar automatically provides:
+
+- **Database type** (PostgreSQL, MySQL, SQL Server, etc.)
+- **Current SQL query** being edited
+- **Database schemas and tables** available in your connection
+- **Your natural language prompt**
+
+This context ensures that the AI generates database-specific, schema-aware SQL queries.
+
+## Keyboard Shortcuts
+
+<AccordionGroup>
+  <Accordion title="AI Assistant Shortcuts">
+    - **`Ctrl+K` / `Cmd+K`** - Open the AI assistant for the selected query
+    - **`Enter`** - Submit your prompt and generate updated SQL
+    - **`Shift+Enter`** - Add a new line in the prompt (multi-line prompts)
+    - **`Escape`** - Close the AI assistant without applying changes
+  </Accordion>
+</AccordionGroup>
+
+## AI Features Requirements
+
+<Warning>
+AI assistance requires an active Conar subscription. If you don't have a subscription, you'll see a prompt to upgrade when attempting to use AI features.
+</Warning>
+
+### Subscription Check
+
+When you try to use the AI assistant:
+
+1. Conar checks if you have an active subscription
+2. If not subscribed, you'll see an upgrade prompt
+3. Click the **Upgrade** button to view subscription plans
+4. Once subscribed, all AI features are immediately available
+
+### Online Requirement
+
+AI features require an active internet connection. If you're offline:
+
+- The AI prompt will show: "Check your internet connection to update selected SQL"
+- The AI assistant will be disabled until connection is restored
+- All other Conar features continue to work offline
+
+## Diff Viewer
+
+When the AI generates an updated query, Conar displays a side-by-side diff viewer showing:
+
+- **Original SQL** (left side) - Your current query
+- **Modified SQL** (right side) - AI-generated update
+- **Inline highlights** - Changes are highlighted for easy review
+
+<Tip>
+The diff viewer helps you understand exactly what the AI changed before applying updates to your query.
+</Tip>
+
+## Best Practices
+
+### Writing Effective AI Prompts
+
+1. **Be specific** - "Add WHERE clause for active users" is better than "filter users"
+2. **Reference columns** - "Sort by created_at descending" is clearer than "sort by date"
+3. **Multiple changes** - You can request multiple updates: "Add WHERE clause for active users and sort by created_at"
+4. **Use natural language** - Write prompts as you would explain to a colleague
+
+### When to Use AI Assistance
+
+- **Quick modifications** - Adding WHERE clauses, JOINs, or ORDER BY
+- **Syntax help** - Converting between SQL dialects
+- **Query optimization** - Ask the AI to optimize or improve performance
+- **Learning** - See how the AI structures complex queries
+
+### When to Write Manually
+
+- **Simple queries** - Basic SELECTs are often faster to type
+- **Complex business logic** - You understand your data best
+- **Critical operations** - Always review AI-generated DELETE or UPDATE statements
+
+## Security & Privacy
+
+<Note>
+Your SQL queries and database schema information are sent to the AI provider (Anthropic, OpenAI, Google, or XAI) to generate responses. Conar does not store or log your queries on our servers beyond what's necessary for the AI request.
+</Note>
+
+### What Data is Sent
+
+- Current SQL query text
+- Database type (PostgreSQL, MySQL, etc.)
+- Database schemas and table names
+- Your natural language prompt
+
+### What Data is NOT Sent
+
+- Connection credentials
+- Actual data from your database
+- Query results
+- Database passwords or secrets
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="AI assistant won't open">
+    - Verify you have an active subscription
+    - Check your internet connection
+    - Ensure you have a query selected or in the editor
+    - Try refreshing the application
+  </Accordion>
+
+  <Accordion title="AI-generated query is incorrect">
+    - Review the diff carefully before applying
+    - Try rephrasing your prompt to be more specific
+    - Check that your database schema context is accurate
+    - You can always undo changes with `Ctrl+Z` / `Cmd+Z`
+  </Accordion>
+
+  <Accordion title="'Check your internet connection' message">
+    - Verify your device is connected to the internet
+    - Check if your firewall is blocking AI provider domains
+    - Try disabling VPN if active
+    - Wait a moment and try again - temporary network issues may resolve
+  </Accordion>
+</AccordionGroup>
+
+## Additional AI Features
+
+Beyond query updates, Conar's AI capabilities include:
+
+- **SQL error fixing** - Automatically fix syntax errors in queries
+- **Query explanation** - Get natural language explanations of complex SQL
+- **Title generation** - Auto-generate descriptive titles for saved queries
+- **Filter assistance** - Build complex WHERE clauses with AI help
+
+<Tip>
+Experiment with different AI prompts to discover the full power of AI-assisted SQL writing. The AI learns from context and improves with more specific instructions.
+</Tip>

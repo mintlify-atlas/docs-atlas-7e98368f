@@ -1,0 +1,406 @@
+---
+title: Query Execution
+description: Run SQL queries, view results, save queries, and track query history
+icon: play
+---
+
+Conar's SQL Runner provides a powerful environment for executing queries, viewing results, and managing your SQL workflow.
+
+## SQL Runner Interface
+
+The SQL Runner is divided into two main sections:
+
+1. **Query Editor** (top) - Write and edit SQL queries
+2. **Results Panel** (bottom) - View query results and execution details
+
+### Opening the SQL Runner
+
+1. Click any database connection from the home screen
+2. Navigate to the **SQL** tab in the connection view
+3. The SQL Runner opens with an empty editor ready for queries
+
+## Writing Queries
+
+### Monaco Editor
+
+The query editor is powered by Monaco Editor (the same editor in VS Code) with:
+
+- **Syntax highlighting** - SQL keywords, functions, and values are color-coded
+- **Auto-completion** - Suggestions for SQL keywords and database objects
+- **Error detection** - Syntax errors highlighted in real-time
+- **Multi-cursor editing** - Edit multiple lines simultaneously
+- **Code formatting** - Auto-format SQL with proper indentation
+
+### Writing Multiple Queries
+
+You can write multiple SQL statements in the editor:
+
+```sql
+SELECT * FROM users WHERE status = 'active';
+
+SELECT COUNT(*) FROM orders WHERE created_at > NOW() - INTERVAL '7 days';
+
+SELECT product_name, SUM(quantity) 
+FROM order_items 
+GROUP BY product_name 
+ORDER BY SUM(quantity) DESC 
+LIMIT 10;
+```
+
+Each query is detected and can be run independently or all together.
+
+### Query Zones
+
+Conar automatically detects query boundaries and creates "query zones":
+
+- Each SQL statement is highlighted with a subtle background
+- Hover over a query to see action buttons
+- Click a query to select it for execution
+
+## Running Queries
+
+### Run All Queries
+
+1. Click the **Run all** button in the toolbar
+2. Or press `Ctrl+Enter` (or `Cmd+Enter` on Mac) when no query is selected
+3. All queries in the editor execute sequentially
+
+### Run Selected Query
+
+1. Click on a specific query zone to select it
+2. Click **Run selected** button (shows count of selected queries)
+3. Or press `Ctrl+Enter` (or `Cmd+Enter` on Mac)
+4. Only the selected query executes
+
+### Run Multiple Selected Queries
+
+1. Hold `Ctrl` (or `Cmd` on Mac) and click multiple query zones
+2. The **Run selected** button shows the count: "Run selected (3)"
+3. Click the button or press `Ctrl+Enter` to run all selected queries
+
+<Tip>
+The number in "Run selected (3)" updates in real-time as you select/deselect queries.
+</Tip>
+
+### Keyboard Shortcuts
+
+| Action | Windows/Linux | Mac |
+|--------|---------------|-----|
+| Run focused query | `Ctrl+Enter` | `Cmd+Enter` |
+| Format SQL | Click Format button | Click Format button |
+| Open AI assistant | `Ctrl+K` | `Cmd+K` |
+| Save query | Save button | Save button |
+
+## Query Results
+
+### Results Table
+
+Query results are displayed in a table with:
+
+- **Column headers** - Click to sort (if supported)
+- **Data rows** - All returned rows from your query
+- **Row numbers** - Left column shows row index
+- **Horizontal scrolling** - For wide result sets
+- **Vertical scrolling** - For many rows
+
+### Result Metadata
+
+Above the results table, you'll see:
+
+- **Row count** - Number of rows returned
+- **Execution time** - How long the query took
+- **Query status** - Success or error indicator
+
+### Multiple Result Sets
+
+When running multiple queries, results are shown in tabs:
+
+1. Each query gets its own result tab
+2. Click tabs to switch between results
+3. Tab names show query preview (e.g., "SELECT * FROM users")
+
+<Note>
+Result tabs are ordered in the sequence queries were executed.
+</Note>
+
+## Dangerous Query Warnings
+
+Conar automatically detects potentially dangerous SQL keywords and shows a confirmation dialog:
+
+### Dangerous Keywords Detected
+
+- `DELETE`
+- `DROP`
+- `TRUNCATE`
+- `ALTER`
+- `UPDATE` (in some contexts)
+
+When detected, you'll see:
+
+1. **Alert dialog** showing the queries to be executed
+2. **Preview** of affected queries highlighted
+3. **Confirm** or **Cancel** buttons
+
+<Warning>
+Always review DELETE, DROP, and TRUNCATE queries carefully before confirming. These operations can result in permanent data loss.
+</Warning>
+
+## Formatting Queries
+
+### Auto-Format
+
+1. Click the **Format** button in the toolbar
+2. A checkmark briefly appears confirming formatting
+3. Your SQL is automatically formatted with:
+   - Proper indentation
+   - Keyword capitalization
+   - Line breaks for readability
+
+### Before Formatting
+
+```sql
+select u.id,u.name,o.total from users u join orders o on u.id=o.user_id where o.status='completed';
+```
+
+### After Formatting
+
+```sql
+SELECT
+  u.id,
+  u.name,
+  o.total
+FROM users u
+JOIN orders o ON u.id = o.user_id
+WHERE o.status = 'completed';
+```
+
+## Saving Queries
+
+### Save a Query
+
+1. Write your SQL query in the editor
+2. Click the **Save** button in the query zone or toolbar
+3. Enter a descriptive name for the query
+4. Click **Save**
+
+### Saved Queries List
+
+1. Click the **Saved** button in the toolbar (shows count badge)
+2. Browse all saved queries for this connection
+3. Click any query to load it into the editor
+4. The count badge shows total saved queries
+
+<AccordionGroup>
+  <Accordion title="Organizing Saved Queries">
+    Saved queries are stored per-connection:
+    
+    - Each database connection has its own saved queries
+    - Queries sync across devices (if sync is enabled)
+    - Use descriptive names for easy searching
+    - Queries are ordered by creation date (newest first)
+  </Accordion>
+
+  <Accordion title="Editing Saved Queries">
+    To modify a saved query:
+    
+    1. Open the saved query from the list
+    2. Make your changes in the editor
+    3. Save again with the same name to update
+    4. Or save with a new name to create a copy
+  </Accordion>
+
+  <Accordion title="Deleting Saved Queries">
+    To remove a saved query:
+    
+    1. Open the saved queries list
+    2. Find the query to delete
+    3. Click the delete icon
+    4. Confirm deletion
+    
+    <Warning>
+    Deleted queries cannot be recovered.
+    </Warning>
+  </Accordion>
+</AccordionGroup>
+
+## Query History
+
+Conar automatically tracks all executed queries for each connection.
+
+### Viewing Query History
+
+Query history is stored locally and includes:
+
+- **Query text** - The exact SQL that was executed
+- **Execution time** - When the query ran
+- **Duration** - How long it took to execute
+- **Row count** - Number of rows returned
+- **Status** - Success or error
+
+### History Benefits
+
+- **Replay queries** - Re-run previous queries without retyping
+- **Audit trail** - See what queries were executed and when
+- **Learning** - Review successful queries for reference
+- **Recovery** - Find queries you forgot to save
+
+<Tip>
+Query history is stored per-connection, making it easy to track work on specific databases.
+</Tip>
+
+## Query Settings
+
+Click the **Settings** icon in the SQL Runner toolbar to configure:
+
+### Available Settings
+
+- **Show system tables** - Include system/internal tables in schema browser
+- **Auto-limit results** - Automatically add LIMIT clause to prevent large result sets
+- **Query timeout** - Maximum execution time before query is cancelled
+- **Result display options** - Configure how results are displayed
+
+<Note>
+Settings are saved per-connection and persist across sessions.
+</Note>
+
+## Working with Results
+
+### Copying Data
+
+- **Copy cell** - Click a cell and press `Ctrl+C` / `Cmd+C`
+- **Copy row** - Select row and copy
+- **Copy column** - Select column header and copy
+- **Copy all** - Select all results and copy
+
+### Exporting Results
+
+Export query results to:
+
+- **CSV** - Comma-separated values
+- **JSON** - Structured JSON format
+- **Excel** - XLSX format
+- **SQL INSERT** - Generate INSERT statements
+
+<AccordionGroup>
+  <Accordion title="Export to CSV">
+    1. Run your query
+    2. Click the export icon in results panel
+    3. Select "CSV"
+    4. Choose save location
+    5. Results exported with headers
+  </Accordion>
+
+  <Accordion title="Export to JSON">
+    1. Run your query
+    2. Click the export icon
+    3. Select "JSON"
+    4. Results exported as array of objects
+    5. Each row becomes a JSON object
+  </Accordion>
+</AccordionGroup>
+
+## Performance Optimization
+
+### Query Execution Tips
+
+1. **Use LIMIT** - Limit large result sets during development
+2. **Add indexes** - Ensure frequently queried columns are indexed
+3. **Analyze queries** - Use EXPLAIN to understand query plans
+4. **Batch operations** - Group related queries together
+5. **Avoid SELECT \*** - Request only needed columns
+
+### Connection Pooling
+
+Conar manages database connections efficiently:
+
+- Connections are reused across queries
+- Automatic connection health checks
+- Graceful handling of connection failures
+- Reconnection on network issues
+
+## Error Handling
+
+### Syntax Errors
+
+If your SQL has syntax errors:
+
+1. Error highlighted in the editor with red underline
+2. Error message appears in results panel
+3. Cursor moves to error location
+4. Fix the error and run again
+
+### Runtime Errors
+
+If a query fails during execution:
+
+1. Error message displays in results panel
+2. Full error details from database shown
+3. Stack trace available for debugging
+4. Query remains in editor for corrections
+
+### Common Errors
+
+<AccordionGroup>
+  <Accordion title="Table or column not found">
+    **Error:** `relation "users" does not exist`
+    
+    **Solutions:**
+    - Check table name spelling
+    - Verify table exists in current database
+    - Check if table is in a specific schema (e.g., `public.users`)
+    - Refresh schema browser to see latest tables
+  </Accordion>
+
+  <Accordion title="Permission denied">
+    **Error:** `permission denied for table users`
+    
+    **Solutions:**
+    - Verify your database user has necessary permissions
+    - Request SELECT/INSERT/UPDATE/DELETE grants from DBA
+    - Check if row-level security is blocking access
+  </Accordion>
+
+  <Accordion title="Timeout error">
+    **Error:** `query timeout exceeded`
+    
+    **Solutions:**
+    - Add WHERE clause to filter data
+    - Add LIMIT to reduce result set
+    - Optimize query with indexes
+    - Increase timeout setting
+    - Run during off-peak hours
+  </Accordion>
+</AccordionGroup>
+
+## Best Practices
+
+### Query Organization
+
+1. **One query per task** - Keep queries focused and simple
+2. **Comment your SQL** - Add comments explaining complex logic
+3. **Use meaningful names** - Save queries with descriptive names
+4. **Test before production** - Verify queries on staging first
+
+### Code Example with Comments
+
+```sql
+-- Get active users who made purchases in last 30 days
+-- Used for monthly retention report
+SELECT 
+  u.id,
+  u.email,
+  COUNT(o.id) as order_count,
+  SUM(o.total) as total_spent
+FROM users u
+INNER JOIN orders o ON u.id = o.user_id
+WHERE 
+  u.status = 'active'
+  AND o.created_at >= NOW() - INTERVAL '30 days'
+GROUP BY u.id, u.email
+HAVING COUNT(o.id) > 0
+ORDER BY total_spent DESC;
+```
+
+<Tip>
+Use the AI assistant (`Ctrl+K` / `Cmd+K`) to help write complex queries or optimize existing ones.
+</Tip>

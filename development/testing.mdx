@@ -1,0 +1,439 @@
+---
+title: Testing
+description: Testing strategies and running tests in Conar
+---
+
+Conar uses a comprehensive testing strategy combining unit tests and end-to-end tests to ensure reliability across all packages and applications.
+
+## Test Framework
+
+The project uses different testing tools for different purposes:
+
+- **Unit Tests**: Bun's built-in test runner
+- **E2E Tests**: Playwright
+- **Database**: PGlite for in-memory PostgreSQL
+
+## Running Tests
+
+### All Tests
+
+Run all unit tests across the monorepo:
+
+```bash
+pnpm run test:unit
+```
+
+This executes tests in all packages using Turbo for parallelization.
+
+### End-to-End Tests
+
+<Steps>
+  <Step title="Start Test Server">
+    First, start the test environment:
+    
+    ```bash
+    pnpm run test:start
+    ```
+    
+    This:
+    - Runs migrations on test database: `postgresql://postgres:postgres@localhost:5432/conar`
+    - Starts API on port 4000
+    - Starts web on port 4001
+    - Starts desktop on port 4002
+  </Step>
+
+  <Step title="Run E2E Tests">
+    In a separate terminal, run Playwright tests:
+    
+    ```bash
+    pnpm run test:e2e
+    ```
+    
+    This runs tests in headed mode so you can see the browser.
+  </Step>
+</Steps>
+
+### Package-Specific Tests
+
+Run tests for a specific package:
+
+```bash
+# Connection package
+cd packages/connection
+bun test
+
+# Desktop app
+cd apps/desktop
+pnpm run test:unit
+```
+
+## Unit Testing
+
+### Bun Test Runner
+
+Conar uses Bun's native test runner for fast unit tests:
+
+```typescript
+import { describe, expect, test } from 'bun:test'
+
+describe('parseConnectionString', () => {
+  test('parses PostgreSQL connection string', () => {
+    const result = parseConnectionString(
+      'postgresql://user:pass@localhost:5432/mydb'
+    )
+    
+    expect(result).toEqual({
+      user: 'user',
+      password: 'pass',
+      host: 'localhost',
+      port: 5432,
+      database: 'mydb',
+      searchParams: expect.any(URLSearchParams),
+    })
+  })
+})
+```
+
+### Example: Connection String Parsing
+
+From `packages/connection/src/parse-connection-string.test.ts`:
+
+```typescript
+import { describe, expect, test } from 'bun:test'
+import { parseConnectionString } from './parse-connection-string'
+
+describe('parseConnectionString', () => {
+  test('handles missing database', () => {
+    const result = parseConnectionString('postgresql://localhost')
+    expect(result.database).toBeUndefined()
+  })
+
+  test('extracts search params', () => {
+    const result = parseConnectionString(
+      'postgresql://localhost/db?ssl=true&timeout=5000'
+    )
+    expect(result.searchParams.get('ssl')).toBe('true')
+    expect(result.searchParams.get('timeout')).toBe('5000')
+  })
+
+  test('handles special characters in password', () => {
+    const result = parseConnectionString(
+      'postgresql://user:p@ssw0rd!@localhost/db'
+    )
+    expect(result.password).toBe('p@ssw0rd!')
+  })
+})
+```
+
+### Example: Encryption Tests
+
+From `packages/shared/src/utils/encryption.test.ts`:
+
+```typescript
+import { describe, expect, test } from 'bun:test'
+import { decrypt, encrypt } from './encryption'
+
+describe('encryption', () => {
+  test('encrypts and decrypts text', () => {
+    const secret = 'my-secret-key'
+    const text = 'sensitive data'
+    
+    const encrypted = encrypt({ text, secret })
+    const decrypted = decrypt({ encryptedText: encrypted, secret })
+    
+    expect(decrypted).toBe(text)
+  })
+
+  test('fails with wrong secret', () => {
+    const encrypted = encrypt({ text: 'data', secret: 'secret1' })
+    
+    expect(() => {
+      decrypt({ encryptedText: encrypted, secret: 'secret2' })
+    }).toThrow('Failed to decrypt text')
+  })
+
+  test('generates unique ciphertexts', () => {
+    const secret = 'secret'
+    const text = 'same text'
+    
+    const encrypted1 = encrypt({ text, secret })
+    const encrypted2 = encrypt({ text, secret })
+    
+    expect(encrypted1).not.toBe(encrypted2) // Different IVs
+  })
+})
+```
+
+### Example: Safe URL Tests
+
+From `packages/shared/src/utils/safe-url.test.ts`:
+
+```typescript
+import { describe, expect, test } from 'bun:test'
+import { SafeURL } from './safe-url'
+
+describe('SafeURL', () => {
+  test('parses valid URL', () => {
+    const url = new SafeURL('https://example.com/path?query=value')
+    expect(url.hostname).toBe('example.com')
+    expect(url.pathname).toBe('/path')
+  })
+
+  test('handles connection strings with special chars', () => {
+    const url = new SafeURL('postgresql://user:p@ss@localhost:5432/db')
+    expect(url.username).toBe('user')
+    expect(url.password).toBe('p@ss')
+  })
+})
+```
+
+## End-to-End Testing
+
+### Playwright Configuration
+
+Conar uses Playwright for E2E testing with configuration in `apps/desktop/playwright.config.ts`:
+
+```typescript
+import { defineConfig, devices } from '@playwright/test'
+
+export default defineConfig({
+  testDir: './e2e',
+  fullyParallel: true,
+  forbidOnly: !!process.env.CI,
+  retries: process.env.CI ? 2 : 0,
+  workers: process.env.CI ? 1 : undefined,
+  reporter: 'html',
+  use: {
+    baseURL: 'http://localhost:4002',
+    trace: 'on-first-retry',
+  },
+  projects: [
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
+    },
+  ],
+  webServer: {
+    command: 'pnpm run test:start',
+    url: 'http://localhost:4002',
+    reuseExistingServer: !process.env.CI,
+  },
+})
+```
+
+### Example E2E Test
+
+```typescript
+import { expect, test } from '@playwright/test'
+
+test.describe('Database Connection', () => {
+  test('should connect to PostgreSQL', async ({ page }) => {
+    await page.goto('/')
+    
+    // Click new connection button
+    await page.click('[data-testid="new-connection"]')
+    
+    // Fill connection form
+    await page.fill('[name="connectionString"]', 
+      'postgresql://postgres:postgres@localhost:5432/test'
+    )
+    await page.fill('[name="password"]', 'test-password')
+    
+    // Submit form
+    await page.click('[type="submit"]')
+    
+    // Verify connection success
+    await expect(page.locator('[data-testid="connection-status"]'))
+      .toHaveText('Connected')
+  })
+
+  test('should execute SQL query', async ({ page }) => {
+    await page.goto('/connections/1')
+    
+    // Type query in editor
+    await page.click('[data-testid="query-editor"]')
+    await page.keyboard.type('SELECT 1 as number')
+    
+    // Execute query
+    await page.click('[data-testid="execute-query"]')
+    
+    // Verify results
+    await expect(page.locator('[data-testid="results-table"]'))
+      .toContainText('number')
+    await expect(page.locator('[data-testid="results-table"]'))
+      .toContainText('1')
+  })
+})
+```
+
+## Testing Database Operations
+
+### Using PGlite
+
+The API uses PGlite for in-memory testing:
+
+```typescript
+import { PGlite } from '@electric-sql/pglite'
+import { drizzle } from 'drizzle-orm/pglite'
+
+let testDb: PGlite
+
+beforeEach(async () => {
+  testDb = new PGlite()
+  const db = drizzle(testDb)
+  
+  // Run migrations
+  await migrate(db, { migrationsFolder: './drizzle' })
+})
+
+afterEach(async () => {
+  await testDb.close()
+})
+```
+
+### Mocking Redis
+
+The API uses ioredis-mock for testing:
+
+```typescript
+import RedisMock from 'ioredis-mock'
+
+const redis = new RedisMock()
+
+test('caches query results', async () => {
+  await redis.set('query:1', JSON.stringify({ rows: [] }))
+  const cached = await redis.get('query:1')
+  expect(JSON.parse(cached!)).toEqual({ rows: [] })
+})
+```
+
+## Test Organization
+
+### File Naming
+
+- Unit tests: `*.test.ts` alongside source files
+- E2E tests: `e2e/*.spec.ts` in app directories
+
+### Test Structure
+
+```typescript
+import { describe, test, expect, beforeEach, afterEach } from 'bun:test'
+
+describe('Feature Name', () => {
+  beforeEach(() => {
+    // Setup
+  })
+
+  afterEach(() => {
+    // Cleanup
+  })
+
+  describe('specific behavior', () => {
+    test('should do something', () => {
+      // Arrange
+      const input = createTestData()
+      
+      // Act
+      const result = functionUnderTest(input)
+      
+      // Assert
+      expect(result).toBe(expected)
+    })
+  })
+})
+```
+
+## Test Coverage
+
+While Conar doesn't currently track coverage metrics, you can add coverage reporting:
+
+```bash
+# Add to package.json
+{
+  "scripts": {
+    "test:coverage": "bun test --coverage"
+  }
+}
+```
+
+## Continuous Integration
+
+Tests run automatically on:
+
+- **Pull Requests**: All unit and E2E tests
+- **Main Branch**: Full test suite
+- **Release**: Extended E2E tests
+
+## Best Practices
+
+### Unit Tests
+
+- Test one thing per test
+- Use descriptive test names
+- Keep tests fast (< 100ms)
+- Mock external dependencies
+- Test edge cases and errors
+
+### E2E Tests
+
+- Use data-testid attributes for selectors
+- Avoid brittle CSS selectors
+- Test user flows, not implementation
+- Use page objects for reusable logic
+- Clean up test data after tests
+
+### Example: Good Test Names
+
+```typescript
+// Good ✓
+test('should throw error when secret is empty')
+test('should parse connection string with special characters')
+test('should encrypt same text to different ciphertexts')
+
+// Bad ✗
+test('encryption works')
+test('test parse')
+test('should work correctly')
+```
+
+## Debugging Tests
+
+### Bun Tests
+
+```bash
+# Run specific test file
+bun test packages/connection/src/parse-connection-string.test.ts
+
+# Run with debugger
+bun test --inspect-brk
+
+# Watch mode
+bun test --watch
+```
+
+### Playwright Tests
+
+```bash
+# Run in headed mode
+pnpm run test:e2e
+
+# Run specific test
+pnpm run test:e2e -- connection.spec.ts
+
+# Debug mode
+pnpm run test:e2e -- --debug
+
+# UI mode
+pnpm dlx playwright test --ui
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Connection Package" icon="plug" href="/development/packages/connection">
+    Explore connection utilities
+  </Card>
+  <Card title="Shared Package" icon="box" href="/development/packages/shared">
+    Learn about shared utilities
+  </Card>
+</CardGroup>

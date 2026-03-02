@@ -1,0 +1,98 @@
+---
+title: Development Overview
+description: Introduction to Conar's development setup and architecture
+---
+
+Conar is an AI-powered open-source database management tool built with modern web technologies. This guide will help you understand the project structure and get started with development.
+
+## What is Conar?
+
+Conar simplifies database interactions with support for:
+
+- **PostgreSQL**
+- **MySQL**
+- **Microsoft SQL Server**
+- **ClickHouse**
+
+The application provides secure connection storage with encryption and AI-powered SQL assistance.
+
+## Technology Stack
+
+Conar is built with a modern TypeScript stack:
+
+### Frontend
+- React 19 with TypeScript
+- TailwindCSS and shadcn/ui components
+- TanStack Start/Router/Query/Form/Virtual
+- Vite for build tooling
+
+### Backend
+- Hono framework for API routes
+- oRPC for type-safe RPC
+- Drizzle ORM for database operations
+- Better Auth for authentication
+
+### Desktop & Web
+- **Desktop**: Electron application (ToDesktop)
+- **Web**: TanStack Start application
+- **API**: Hono-based REST API
+
+### AI & Analytics
+- AI SDK with Anthropic, OpenAI, Gemini, and XAI
+- PostHog for analytics
+
+## Project Structure
+
+Conar uses a **monorepo architecture** with pnpm workspaces:
+
+```
+conar/
+├── apps/
+│   ├── desktop/    # Electron desktop application
+│   ├── web/        # TanStack Start web application
+│   └── api/        # Hono API server
+├── packages/
+│   ├── connection/ # Database connection utilities
+│   ├── shared/     # Shared utilities and constants
+│   ├── table/      # Virtual table component
+│   ├── ui/         # UI components library
+│   └── configs/    # Shared configurations
+├── pnpm-workspace.yaml
+└── package.json
+```
+
+## Key Features
+
+### Monorepo Management
+- **Package Manager**: pnpm with workspace support
+- **Build System**: Turbo for orchestrated builds
+- **Version Catalog**: Centralized dependency versions in `pnpm-workspace.yaml`
+
+### Code Quality
+- ESLint with @antfu/eslint-config
+- TypeScript for type safety
+- Husky for git hooks
+- Commitlint for conventional commits
+
+### Development Workflow
+- Hot module replacement in all apps
+- Type checking across packages
+- Unit and E2E testing with Playwright
+- Docker Compose for local services
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Setup" icon="download" href="/development/setup">
+    Get your development environment ready
+  </Card>
+  <Card title="Architecture" icon="sitemap" href="/development/architecture">
+    Understand the system design
+  </Card>
+  <Card title="Testing" icon="flask" href="/development/testing">
+    Learn about testing strategies
+  </Card>
+  <Card title="Packages" icon="box" href="/development/packages/connection">
+    Explore the package structure
+  </Card>
+</CardGroup>

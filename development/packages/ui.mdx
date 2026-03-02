@@ -1,0 +1,563 @@
+---
+title: UI Package
+description: Comprehensive React component library and custom hooks for Conar
+---
+
+The `@conar/ui` package is a comprehensive UI library containing React components, custom hooks, and utilities built on top of shadcn/ui and Radix UI primitives.
+
+## Installation
+
+This package is internal to the monorepo:
+
+```json
+{
+  "dependencies": {
+    "@conar/ui": "workspace:*"
+  }
+}
+```
+
+## Package Structure
+
+```
+packages/ui/
+├── src/
+│   ├── components/          # UI components
+│   │   ├── button.tsx
+│   │   ├── input.tsx
+│   │   ├── dialog.tsx
+│   │   ├── custom/         # Custom components
+│   │   ├── brand/          # Branding components
+│   │   └── ...
+│   ├── hooks/              # React hooks
+│   │   └── use-app-form.ts
+│   ├── hookas/             # Extended hooks collection
+│   │   ├── use-toggle.ts
+│   │   ├── use-debounced-callback.ts
+│   │   ├── use-media-query.ts
+│   │   └── ...
+│   ├── lib/                # Utilities
+│   │   ├── utils.ts       # cn() function
+│   │   ├── copy.ts
+│   │   └── render.ts
+│   ├── styles/
+│   │   └── globals.css    # Global styles
+│   ├── theme-observer.tsx # Theme management
+│   └── use-theme.ts       # Theme hook
+└── package.json
+```
+
+## Exports
+
+The package provides granular exports:
+
+```typescript
+// Components
+import { Button } from '@conar/ui/components/button'
+import { Input } from '@conar/ui/components/input'
+import { Dialog } from '@conar/ui/components/dialog'
+
+// Custom components
+import { ThemeToggle } from '@conar/ui/components/custom/theme-toggle'
+import { CopyButton } from '@conar/ui/components/custom/copy-button'
+
+// Hooks
+import { useAppForm } from '@conar/ui/hooks/use-app-form'
+
+// Extended hooks ("hookas")
+import { useToggle } from '@conar/ui/hookas/use-toggle'
+import { useDebounced } from '@conar/ui/hookas/use-debounced-callback'
+import { useMediaQuery } from '@conar/ui/hookas/use-media-query'
+
+// Utilities
+import { cn } from '@conar/ui/lib/utils'
+import { copy } from '@conar/ui/lib/copy'
+
+// Theme
+import { ThemeObserver } from '@conar/ui/theme-observer'
+import { useTheme } from '@conar/ui/use-theme'
+
+// Styles
+import '@conar/ui/globals.css'
+```
+
+Defined in `package.json:5`:
+
+```json
+{
+  "exports": {
+    "./globals.css": "./src/styles/globals.css",
+    "./lib/*": "./src/lib/*.ts",
+    "./components/*": "./src/components/*.tsx",
+    "./hooks/*": "./src/hooks/*.ts",
+    "./hookas/*": "./src/hookas/*.ts",
+    "./theme-observer": "./src/theme-observer.tsx",
+    "./use-theme": "./src/use-theme.ts"
+  }
+}
+```
+
+## Core Components
+
+### Button
+
+Versatile button component with variants.
+
+From `packages/ui/src/components/button.tsx:10`:
+
+```typescript
+import { Button } from '@conar/ui/components/button'
+
+<Button variant="default">Click me</Button>
+<Button variant="destructive">Delete</Button>
+<Button variant="outline" size="sm">Small</Button>
+<Button variant="ghost" size="icon">🔍</Button>
+<Button asChild>
+  <a href="/settings">Settings</a>
+</Button>
+```
+
+**Props:**
+
+```typescript
+interface ButtonProps extends ComponentProps<'button'> {
+  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link'
+  size?: 'default' | 'sm' | 'lg' | 'icon'
+  asChild?: boolean
+}
+```
+
+**Implementation:**
+
+```typescript
+export function Button({
+  className,
+  variant,
+  size,
+  type = 'button',
+  asChild = false,
+  ...props
+}: ButtonProps) {
+  const Comp = asChild ? Slot : 'button'
+
+  return (
+    <Comp
+      type={type}
+      className={cn(buttonVariants({ variant, size }), className)}
+      {...props}
+    />
+  )
+}
+```
+
+### Input
+
+```typescript
+import { Input } from '@conar/ui/components/input'
+
+<Input 
+  type="email" 
+  placeholder="Email"
+  className="w-full"
+/>
+```
+
+### Dialog
+
+```typescript
+import { 
+  Dialog, 
+  DialogTrigger, 
+  DialogContent,
+  DialogHeader,
+  DialogTitle 
+} from '@conar/ui/components/dialog'
+
+<Dialog>
+  <DialogTrigger asChild>
+    <Button>Open Dialog</Button>
+  </DialogTrigger>
+  <DialogContent>
+    <DialogHeader>
+      <DialogTitle>Settings</DialogTitle>
+    </DialogHeader>
+    <div>Dialog content here</div>
+  </DialogContent>
+</Dialog>
+```
+
+## Custom Components
+
+### ThemeToggle
+
+```typescript
+import { ThemeToggle } from '@conar/ui/components/custom/theme-toggle'
+
+<ThemeToggle />
+```
+
+### CopyButton
+
+```typescript
+import { CopyButton } from '@conar/ui/components/custom/copy-button'
+
+<CopyButton value="text to copy" />
+```
+
+### SearchInput
+
+```typescript
+import { SearchInput } from '@conar/ui/components/custom/search-input'
+
+<SearchInput 
+  placeholder="Search connections..."
+  onSearch={setSearchTerm}
+/>
+```
+
+### LoadingContent
+
+```typescript
+import { LoadingContent } from '@conar/ui/components/custom/loading-content'
+
+<LoadingContent loading={isLoading}>
+  <div>Content here</div>
+</LoadingContent>
+```
+
+## Hooks Collection
+
+### useToggle
+
+Simple boolean toggle hook.
+
+From `packages/ui/src/hookas/use-toggle.ts:3`:
+
+```typescript
+import { useToggle } from '@conar/ui/hookas/use-toggle'
+
+function Component() {
+  const [isOpen, toggleOpen] = useToggle(false)
+  
+  return (
+    <>
+      <Button onClick={() => toggleOpen()}>Toggle</Button>
+      <Button onClick={() => toggleOpen(true)}>Open</Button>
+      <Button onClick={() => toggleOpen(false)}>Close</Button>
+      {isOpen && <div>Content</div>}
+    </>
+  )
+}
+```
+
+**Implementation:**
+
+```typescript
+export function useToggle(initialValue = false) {
+  const [value, setValue] = useState(initialValue)
+
+  const toggle = useCallback((value?: boolean) => {
+    setValue(prev => value ?? !prev)
+  }, [])
+
+  return [value, toggle] as const
+}
+```
+
+### useDebouncedCallback
+
+```typescript
+import { useDebouncedCallback } from '@conar/ui/hookas/use-debounced-callback'
+
+function SearchComponent() {
+  const handleSearch = useDebouncedCallback(
+    (term: string) => {
+      // API call
+      fetchResults(term)
+    },
+    [], // dependencies
+    500 // delay in ms
+  )
+  
+  return <Input onChange={e => handleSearch(e.target.value)} />
+}
+```
+
+### useMediaQuery
+
+```typescript
+import { useMediaQuery } from '@conar/ui/hookas/use-media-query'
+
+function ResponsiveComponent() {
+  const isMobile = useMediaQuery('(max-width: 768px)')
+  const isDark = useMediaQuery('(prefers-color-scheme: dark)')
+  
+  return (
+    <div>
+      {isMobile ? <MobileView /> : <DesktopView />}
+    </div>
+  )
+}
+```
+
+### useLocalStorage
+
+```typescript
+import { useLocalStorage } from '@conar/ui/hookas/use-local-storage'
+
+function Component() {
+  const [theme, setTheme] = useLocalStorage('theme', 'light')
+  
+  return (
+    <Button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
+      Current: {theme}
+    </Button>
+  )
+}
+```
+
+### useIsMounted
+
+```typescript
+import { useIsMounted } from '@conar/ui/hookas/use-is-mounted'
+
+function Component() {
+  const isMounted = useIsMounted()
+  
+  useEffect(() => {
+    if (isMounted()) {
+      // Safe to update state
+    }
+  }, [])
+}
+```
+
+### useElementSize
+
+```typescript
+import { useElementSize } from '@conar/ui/hookas/use-element-size'
+
+function Component() {
+  const { ref, width, height } = useElementSize()
+  
+  return (
+    <div ref={ref}>
+      Size: {width} x {height}
+    </div>
+  )
+}
+```
+
+## Utilities
+
+### cn()
+
+Combine Tailwind classes with conflict resolution.
+
+From `packages/ui/src/lib/utils.ts:5`:
+
+```typescript
+import { cn } from '@conar/ui/lib/utils'
+
+// Merge classes
+const className = cn(
+  'px-4 py-2',
+  'bg-blue-500',
+  isActive && 'bg-green-500',
+  props.className
+)
+
+// Result: 'px-4 py-2 bg-green-500' (conflicts resolved)
+```
+
+**Implementation:**
+
+```typescript
+import type { ClassValue } from 'clsx'
+import { clsx } from 'clsx'
+import { twMerge } from 'tailwind-merge'
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs)).replace(/\s+/g, ' ').trim()
+}
+```
+
+### copy()
+
+```typescript
+import { copy } from '@conar/ui/lib/copy'
+
+await copy('text to clipboard')
+```
+
+## Theme Management
+
+### useTheme
+
+```typescript
+import { useTheme } from '@conar/ui/use-theme'
+
+function ThemeToggle() {
+  const { theme, setTheme } = useTheme()
+  
+  return (
+    <Button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
+      {theme === 'light' ? '🌙' : '☀️'}
+    </Button>
+  )
+}
+```
+
+### ThemeObserver
+
+Automatically syncs theme with system preferences:
+
+```typescript
+import { ThemeObserver } from '@conar/ui/theme-observer'
+
+function App() {
+  return (
+    <>
+      <ThemeObserver />
+      {/* rest of app */}
+    </>
+  )
+}
+```
+
+## Styling
+
+### Global Styles
+
+Import global styles in your app:
+
+```typescript
+import '@conar/ui/globals.css'
+```
+
+### Tailwind Configuration
+
+The package uses Tailwind CSS with:
+
+- Custom color palette
+- Dark mode support
+- Typography plugin
+- Scrollbar styling
+- Animation utilities
+
+## Component Catalog
+
+Over 50 components available:
+
+**Form Components:**
+- Button, Input, Textarea
+- Select, Checkbox, Switch
+- Label, Field
+
+**Layout:**
+- Card, Separator
+- Tabs, Accordion
+- Sheet, Dialog, Alert Dialog
+
+**Feedback:**
+- Alert, Toast (Sonner)
+- Skeleton, Progress
+- Tooltip
+
+**Navigation:**
+- Dropdown Menu, Context Menu
+- Command (⌘K menu)
+- Popover
+
+**Data Display:**
+- Table, Badge
+- Avatar, kbd
+
+**Custom:**
+- Theme Toggle, Copy Button
+- User Avatar, Search Input
+- Loading Content, Indicator
+- Refresh Button, Shortcuts
+
+## Best Practices
+
+### Component Composition
+
+```typescript
+// Good ✓ - Compose from primitives
+<Dialog>
+  <DialogTrigger asChild>
+    <Button variant="outline">Open</Button>
+  </DialogTrigger>
+  <DialogContent>
+    <DialogHeader>
+      <DialogTitle>Title</DialogTitle>
+    </DialogHeader>
+  </DialogContent>
+</Dialog>
+
+// Bad ✗ - Don't create monolithic components
+<Dialog open onOpenChange title="Title" trigger={<Button />}>
+```
+
+### Class Merging
+
+```typescript
+// Good ✓ - Use cn() for class merging
+function Component({ className }: { className?: string }) {
+  return <div className={cn('base-classes', className)} />
+}
+
+// Bad ✗ - Don't concatenate strings
+function Component({ className }: { className?: string }) {
+  return <div className={`base-classes ${className}`} />
+}
+```
+
+### Hooks
+
+```typescript
+// Good ✓ - Use provided hooks
+const [isOpen, toggle] = useToggle()
+const isMobile = useMediaQuery('(max-width: 768px)')
+
+// Bad ✗ - Don't reinvent the wheel
+const [isOpen, setIsOpen] = useState(false)
+const toggle = () => setIsOpen(prev => !prev)
+```
+
+## Dependencies
+
+```json
+{
+  "dependencies": {
+    "@conar/shared": "workspace:*",
+    "@radix-ui/react-dialog": "catalog:",
+    "@radix-ui/react-dropdown-menu": "catalog:",
+    "class-variance-authority": "catalog:",
+    "clsx": "catalog:",
+    "tailwind-merge": "catalog:",
+    "lucide-react": "catalog:",
+    "sonner": "catalog:",
+    "motion": "catalog:"
+  }
+}
+```
+
+## Type Checking
+
+```bash
+cd packages/ui
+pnpm run check-types
+```
+
+## Related Packages
+
+<CardGroup cols={2}>
+  <Card title="Table Package" icon="table" href="/development/packages/table">
+    Uses UI components and hooks
+  </Card>
+  <Card title="Shared Package" icon="box" href="/development/packages/shared">
+    Common utilities
+  </Card>
+</CardGroup>

@@ -1,0 +1,324 @@
+---
+title: PostgreSQL
+description: Connect to PostgreSQL databases with Conar. Learn about connection strings, SSL/TLS configuration, and PostgreSQL-specific features.
+icon: elephant
+---
+
+## Overview
+
+Conar provides full support for PostgreSQL databases with advanced features including SSL/TLS security, query compilation, and comprehensive schema introspection.
+
+## Connection String Format
+
+PostgreSQL connections use the standard PostgreSQL URL format:
+
+```text
+postgresql://username:password@hostname:port/database?options
+```
+
+### Basic Connection
+
+<CodeGroup>
+
+```text Local Development
+postgresql://postgres:password@localhost:5432/myapp
+```
+
+```text Remote Server
+postgresql://admin:securepass@db.example.com:5432/production
+```
+
+```text With Schema
+postgresql://user:pass@localhost:5432/mydb?options=-c%20search_path=auth
+```
+
+```text Alternative Protocol
+postgres://user:password@localhost:5432/database
+```
+
+</CodeGroup>
+
+<Note>
+  Both `postgresql://` and `postgres://` protocols are supported and work identically.
+</Note>
+
+## SSL/TLS Configuration
+
+PostgreSQL connections support comprehensive SSL/TLS configuration for secure connections.
+
+### SSL Modes
+
+Conar supports the following SSL modes via the `sslmode` parameter:
+
+<AccordionGroup>
+  <Accordion title="disable" icon="ban">
+    Disables SSL entirely. Use only for local development or trusted networks.
+    
+    ```text
+    postgresql://user:pass@localhost:5432/db?sslmode=disable
+    ```
+    
+    <Warning>
+      Cannot be combined with SSL certificate parameters.
+    </Warning>
+  </Accordion>
+
+  <Accordion title="require" icon="lock">
+    Requires SSL but does not verify the server certificate.
+    
+    ```text
+    postgresql://user:pass@db.example.com:5432/db?sslmode=require
+    ```
+  </Accordion>
+
+  <Accordion title="prefer" icon="shield-check">
+    Attempts SSL connection first, falls back to non-SSL if unavailable.
+    
+    ```text
+    postgresql://user:pass@db.example.com:5432/db?sslmode=prefer
+    ```
+  </Accordion>
+
+  <Accordion title="no-verify" icon="shield-halved">
+    Enables SSL without certificate verification. Useful for self-signed certificates.
+    
+    ```text
+    postgresql://user:pass@db.example.com:5432/db?sslmode=no-verify
+    ```
+  </Accordion>
+
+  <Accordion title="verify" icon="shield">
+    Verifies the server certificate. Recommended for production use.
+    
+    ```text
+    postgresql://user:pass@db.example.com:5432/db?sslmode=verify&sslrootcert=/path/to/ca.pem
+    ```
+    
+    <Info>
+      This mode is commonly used with managed PostgreSQL services like Supabase.
+    </Info>
+  </Accordion>
+
+  <Accordion title="verify-ca" icon="shield">
+    Verifies the certificate authority.
+    
+    ```text
+    postgresql://user:pass@db.example.com:5432/db?sslmode=verify-ca&sslrootcert=/path/to/ca.pem
+    ```
+  </Accordion>
+
+  <Accordion title="verify-full" icon="shield-check">
+    Full certificate verification including hostname matching.
+    
+    ```text
+    postgresql://user:pass@db.example.com:5432/db?sslmode=verify-full&sslcert=/path/to/cert.pem&sslkey=/path/to/key.pem&sslrootcert=/path/to/ca.pem
+    ```
+  </Accordion>
+</AccordionGroup>
+
+### SSL Certificate Parameters
+
+For advanced SSL configurations, you can specify certificate files and additional options:
+
+| Parameter | Description | Example |
+|-----------|-------------|----------|
+| `sslcert` | Client certificate file path | `/path/to/client-cert.pem` |
+| `sslkey` | Client private key file path | `/path/to/client-key.pem` |
+| `sslrootcert` | Root CA certificate file path | `/path/to/ca.pem` |
+| `sslpassword` | Password for encrypted private key | `keypassword` |
+| `sslservername` | Server name for SNI | `db.example.com` |
+
+### Simple SSL Parameter
+
+For basic SSL control, use the `ssl` parameter:
+
+<CodeGroup>
+
+```text Enable SSL
+postgresql://user:pass@db.example.com:5432/db?ssl=true
+```
+
+```text Disable SSL
+postgresql://user:pass@localhost:5432/db?ssl=false
+```
+
+</CodeGroup>
+
+<Note>
+  The `ssl` parameter accepts: `true`, `false`, `1`, or `0`
+</Note>
+
+### Common SSL Configurations
+
+<CodeGroup>
+
+```text Supabase
+postgresql://user:pass@db.supabase.co:5432/postgres?sslmode=verify&sslrootcert=/path/to/ca.pem
+```
+
+```text AWS RDS
+postgresql://user:pass@mydb.us-east-1.rds.amazonaws.com:5432/database?sslmode=require
+```
+
+```text Self-Signed Certificate
+postgresql://user:pass@db.example.com:5432/db?sslmode=no-verify
+```
+
+```text Mutual TLS (mTLS)
+postgresql://user:pass@db.example.com:5432/db?sslmode=verify-full&sslcert=/path/to/client-cert.pem&sslkey=/path/to/client-key.pem&sslrootcert=/path/to/ca.pem
+```
+
+</CodeGroup>
+
+## Supported Features
+
+Conar's PostgreSQL implementation leverages Kysely's PostgresDialect with the following capabilities:
+
+### Query Compilation
+
+- **PostgresQueryCompiler**: Converts Kysely queries to PostgreSQL-compatible SQL
+- **PostgresAdapter**: Provides PostgreSQL-specific database operations
+- Full support for PostgreSQL syntax and features
+
+### Schema Introspection
+
+Conar can introspect PostgreSQL databases to provide:
+
+- Table and view listings
+- Column information with data types
+- Primary keys and constraints
+- Foreign key relationships
+- Indexes and sequences
+
+Schema information is queried from:
+- `information_schema` standard views
+- `pg_catalog` system tables
+
+### Transaction Support
+
+- `BEGIN`, `COMMIT`, and `ROLLBACK` operations
+- Transaction isolation levels
+- Savepoints
+
+## Connection Parameters
+
+### Standard Parameters
+
+| Parameter | Description | Default |
+|-----------|-------------|----------|
+| `host` | Database server hostname | `localhost` |
+| `port` | Database server port | `5432` |
+| `database` | Database name | Required |
+| `user` | Username for authentication | Required |
+| `password` | Password for authentication | Required |
+
+### Query Parameters
+
+Additional parameters can be passed via the query string:
+
+<CodeGroup>
+
+```text Application Name
+postgresql://user:pass@localhost:5432/db?application_name=conar
+```
+
+```text Connection Timeout
+postgresql://user:pass@localhost:5432/db?connect_timeout=10
+```
+
+```text Search Path
+postgresql://user:pass@localhost:5432/db?options=-c%20search_path=myschema,public
+```
+
+</CodeGroup>
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Use SSL in Production" icon="shield-check">
+    Always enable SSL for production databases. Use `sslmode=verify` or `sslmode=verify-full` when possible.
+    
+    ```text
+    postgresql://user:pass@prod-db.example.com:5432/db?sslmode=verify
+    ```
+  </Accordion>
+
+  <Accordion title="Specify Connection Timeouts" icon="clock">
+    Set appropriate timeouts to prevent hanging connections.
+    
+    ```text
+    postgresql://user:pass@db.example.com:5432/db?connect_timeout=10
+    ```
+  </Accordion>
+
+  <Accordion title="Use Environment Labels" icon="tag">
+    In Conar, label your connections as "Local", "Dev", "Staging", or "Prod" for easy identification.
+  </Accordion>
+
+  <Accordion title="Secure Password Management" icon="key">
+    For production databases, choose "Sync Without Password" to avoid storing passwords in the cloud.
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshooting
+
+### Connection Refused
+
+<Steps>
+  <Step title="Check PostgreSQL is Running">
+    ```bash
+    # On Linux/macOS
+    pg_isready -h localhost -p 5432
+    
+    # Check service status
+    systemctl status postgresql
+    ```
+  </Step>
+  
+  <Step title="Verify Port and Host">
+    Ensure PostgreSQL is listening on the correct port and accepts connections from your IP.
+    
+    Check `postgresql.conf` for:
+    ```
+    listen_addresses = '*'
+    port = 5432
+    ```
+  </Step>
+  
+  <Step title="Check Firewall Rules">
+    Ensure port 5432 is open in your firewall.
+  </Step>
+</Steps>
+
+### SSL Certificate Errors
+
+<Warning>
+  If you see SSL certificate verification errors, try `sslmode=no-verify` for testing, but use proper certificates in production.
+</Warning>
+
+```text Development Workaround
+postgresql://user:pass@localhost:5432/db?sslmode=no-verify
+```
+
+### Authentication Failed
+
+- Verify username and password are correct
+- Check `pg_hba.conf` allows connections from your IP
+- Ensure the user has permission to access the database
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="MySQL" icon="database" href="/databases/mysql">
+    Learn about MySQL connections
+  </Card>
+  <Card title="MSSQL" icon="database" href="/databases/mssql">
+    Connect to Microsoft SQL Server
+  </Card>
+  <Card title="ClickHouse" icon="database" href="/databases/clickhouse">
+    ClickHouse connection guide
+  </Card>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Getting started with Conar
+  </Card>
+</CardGroup>

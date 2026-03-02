@@ -1,0 +1,540 @@
+---
+title: Table Package
+description: High-performance virtualized table component for rendering large datasets
+---
+
+The `@conar/table` package provides a virtualized table component optimized for rendering large database query results with smooth scrolling and dynamic column sizing.
+
+## Installation
+
+This package is internal to the monorepo:
+
+```json
+{
+  "dependencies": {
+    "@conar/table": "workspace:*"
+  }
+}
+```
+
+## Package Structure
+
+```
+packages/table/
+├── src/
+│   ├── index.ts                        # Main exports
+│   ├── constants.ts                    # Default sizes
+│   ├── provider.tsx                    # Table context provider
+│   ├── table.tsx                       # Table wrapper
+│   ├── header.tsx                      # Table header
+│   ├── body.tsx                        # Table body
+│   ├── table-context.ts                # Context definition
+│   ├── use-shift-selection-click.ts    # Shift+click selection
+│   └── use-shift-selection-key-down.ts # Keyboard selection
+└── package.json
+```
+
+## Core Concepts
+
+### Virtual Scrolling
+
+The table uses TanStack Virtual to render only visible rows and columns:
+
+- **Rows**: Only renders rows in viewport + overscan
+- **Columns**: Only renders columns in viewport + overscan
+- **Performance**: Handles 100,000+ rows smoothly
+
+### Context-Based
+
+All table state is managed via React Context:
+
+```typescript
+interface TableContextType {
+  scrollRef: RefObject<HTMLDivElement | null>
+  scrollDirection: ScrollDirection
+  rows: Record<string, unknown>[]
+  columns: ColumnRenderer[]
+  virtualRows: VirtualItem[]
+  virtualColumns: VirtualItem[]
+  tableHeight: number
+  tableWidth: number
+}
+```
+
+## Exports
+
+From `packages/table/src/index.ts:3`:
+
+```typescript
+// Components
+export { TableProvider } from './provider'
+export { Table } from './table'
+export { TableHeader } from './header'
+export { TableBody } from './body'
+
+// Context
+export { useTableContext, type TableContextType } from './table-context'
+
+// Hooks
+export { 
+  useShiftSelectionClick,
+  type UseShiftSelectionClickOptions 
+} from './use-shift-selection-click'
+export { 
+  useShiftSelectionKeyDown,
+  type UseShiftSelectionKeyDownOptions,
+  type SelectionState
+} from './use-shift-selection-key-down'
+
+// Constants
+export { DEFAULT_COLUMN_WIDTH, DEFAULT_ROW_HEIGHT } from './constants'
+
+// Types
+export type { 
+  ColumnRenderer,
+  TableCellProps,
+  TableHeaderCellProps 
+} from './'
+```
+
+## Basic Usage
+
+```typescript
+import { 
+  TableProvider, 
+  Table, 
+  TableHeader, 
+  TableBody 
+} from '@conar/table'
+
+function QueryResults({ data }: { data: Record<string, unknown>[] }) {
+  const columns: ColumnRenderer[] = Object.keys(data[0] || {}).map(key => ({
+    id: key,
+    size: 150,
+  }))
+
+  return (
+    <TableProvider rows={data} columns={columns}>
+      <Table>
+        <TableHeader />
+        <TableBody />
+      </Table>
+    </TableProvider>
+  )
+}
+```
+
+## Components
+
+### TableProvider
+
+Provides context for all table components.
+
+**Props:**
+
+```typescript
+interface TableProviderProps {
+  rows: Record<string, unknown>[]
+  columns: ColumnRenderer[]
+  children: ReactNode
+  estimatedRowSize?: number        // Default: DEFAULT_ROW_HEIGHT
+  estimatedColumnSize?: number     // Default: DEFAULT_COLUMN_WIDTH
+  customColumnSizes?: Record<string, number>
+}
+```
+
+**Example:**
+
+```typescript
+<TableProvider
+  rows={queryResults}
+  columns={columns}
+  estimatedRowSize={36}
+  estimatedColumnSize={200}
+  customColumnSizes={{
+    id: 80,
+    name: 250,
+    email: 300,
+  }}
+>
+  {children}
+</TableProvider>
+```
+
+**Implementation:**
+
+From `packages/table/src/provider.tsx:12`:
+
+```typescript
+export function TableProvider({
+  rows,
+  columns,
+  children,
+  estimatedRowSize = DEFAULT_ROW_HEIGHT,
+  estimatedColumnSize = DEFAULT_COLUMN_WIDTH,
+  customColumnSizes,
+}: TableProviderProps) {
+  const scrollRef = useRef<HTMLDivElement | null>(null)
+  const scrollDirection = useScrollDirection(scrollRef)
+
+  // Vertical virtualizer for rows
+  const { getVirtualItems: getVirtualRows, getTotalSize: getTableHeight } = 
+    useVirtualizer({
+      count: rows.length,
+      getScrollElement: () => scrollRef.current,
+      estimateSize: () => estimatedRowSize,
+      overscan: verticalScroll ? 10 : 0,
+    })
+
+  // Horizontal virtualizer for columns
+  const { getVirtualItems: getVirtualColumns, getTotalSize: getTableWidth } = 
+    useVirtualizer({
+      horizontal: true,
+      count: columns.length,
+      getScrollElement: () => scrollRef.current,
+      estimateSize: index => 
+        customColumnSizes?.[columns[index]!.id] ?? 
+        columns[index]!.size ?? 
+        estimatedColumnSize,
+      overscan: horizontalScroll ? 3 : 0,
+    })
+
+  // ... context provider
+}
+```
+
+### Table
+
+Main table wrapper component.
+
+```typescript
+import { Table } from '@conar/table'
+
+<Table className="custom-table">
+  <TableHeader />
+  <TableBody />
+</Table>
+```
+
+### TableHeader
+
+Renders table header with column names.
+
+```typescript
+<TableHeader />
+```
+
+### TableBody
+
+Renders virtualized table body.
+
+```typescript
+<TableBody />
+```
+
+## Column Renderers
+
+Customize how cells and headers are rendered:
+
+```typescript
+interface ColumnRenderer {
+  id: string
+  size: number
+  cell?: ComponentType<TableCellProps>
+  header?: ComponentType<TableHeaderCellProps>
+}
+```
+
+### Custom Cell Renderer
+
+```typescript
+import type { TableCellProps } from '@conar/table'
+
+function DateCell({ value, style }: TableCellProps) {
+  const date = new Date(value as string)
+  
+  return (
+    <div style={style} className="px-4 py-2">
+      {date.toLocaleDateString()}
+    </div>
+  )
+}
+
+const columns: ColumnRenderer[] = [
+  {
+    id: 'created_at',
+    size: 150,
+    cell: DateCell,
+  },
+]
+```
+
+### Custom Header Renderer
+
+```typescript
+import type { TableHeaderCellProps } from '@conar/table'
+
+function SortableHeader({ id, style }: TableHeaderCellProps) {
+  const [sort, setSort] = useState<'asc' | 'desc'>('asc')
+  
+  return (
+    <button 
+      style={style} 
+      onClick={() => setSort(s => s === 'asc' ? 'desc' : 'asc')}
+      className="px-4 py-2 font-semibold"
+    >
+      {id} {sort === 'asc' ? '↑' : '↓'}
+    </button>
+  )
+}
+
+const columns: ColumnRenderer[] = [
+  {
+    id: 'name',
+    size: 200,
+    header: SortableHeader,
+  },
+]
+```
+
+## Selection Hooks
+
+### useShiftSelectionClick
+
+Handles shift+click range selection.
+
+```typescript
+import { useShiftSelectionClick } from '@conar/table'
+
+function SelectableTable() {
+  const [selected, setSelected] = useState<Set<number>>(new Set())
+  
+  const handleClick = useShiftSelectionClick({
+    onSelectionChange: (indices) => {
+      setSelected(new Set(indices))
+    },
+  })
+  
+  return (
+    <TableBody
+      onRowClick={(rowIndex, event) => handleClick(rowIndex, event)}
+    />
+  )
+}
+```
+
+### useShiftSelectionKeyDown
+
+Handles keyboard navigation and selection.
+
+```typescript
+import { useShiftSelectionKeyDown } from '@conar/table'
+
+function KeyboardTable() {
+  const [selection, setSelection] = useState<SelectionState>({
+    anchor: null,
+    selected: new Set(),
+  })
+  
+  const handleKeyDown = useShiftSelectionKeyDown({
+    totalItems: rows.length,
+    selection,
+    onSelectionChange: setSelection,
+  })
+  
+  return (
+    <div onKeyDown={handleKeyDown}>
+      <TableBody />
+    </div>
+  )
+}
+```
+
+## Dynamic Column Sizing
+
+Columns can be resized dynamically:
+
+```typescript
+function ResizableTable() {
+  const [columnSizes, setColumnSizes] = useState<Record<string, number>>({
+    id: 80,
+    name: 200,
+  })
+  
+  const handleResize = (columnId: string, newSize: number) => {
+    setColumnSizes(prev => ({ ...prev, [columnId]: newSize }))
+  }
+  
+  return (
+    <TableProvider
+      rows={rows}
+      columns={columns}
+      customColumnSizes={columnSizes}
+    >
+      <Table onColumnResize={handleResize}>
+        <TableHeader />
+        <TableBody />
+      </Table>
+    </TableProvider>
+  )
+}
+```
+
+## Context Access
+
+Access table context in custom components:
+
+```typescript
+import { useTableContext } from '@conar/table'
+
+function CustomTableFooter() {
+  const rows = useTableContext(ctx => ctx.rows)
+  const virtualRows = useTableContext(ctx => ctx.virtualRows)
+  
+  return (
+    <div>
+      Showing {virtualRows.length} of {rows.length} rows
+    </div>
+  )
+}
+```
+
+## Constants
+
+From `packages/table/src/constants.ts`:
+
+```typescript
+export const DEFAULT_ROW_HEIGHT = 36
+export const DEFAULT_COLUMN_WIDTH = 150
+```
+
+## Performance Tips
+
+### Optimize Re-renders
+
+Use selector functions with `useTableContext`:
+
+```typescript
+// Good ✓
+const rowCount = useTableContext(ctx => ctx.rows.length)
+
+// Bad ✗ - Re-renders on any context change
+const { rows } = useContext(TableContext)
+const rowCount = rows.length
+```
+
+### Memoize Column Definitions
+
+```typescript
+const columns = useMemo<ColumnRenderer[]>(() => [
+  { id: 'id', size: 80 },
+  { id: 'name', size: 200 },
+], [])
+```
+
+### Estimated Sizes
+
+Provide accurate size estimates for better scrollbar behavior:
+
+```typescript
+<TableProvider
+  estimatedRowSize={40}  // Actual row height
+  estimatedColumnSize={180} // Average column width
+>
+```
+
+## Real-World Example
+
+Complete example with custom renderers:
+
+```typescript
+import { 
+  TableProvider, 
+  Table, 
+  TableHeader, 
+  TableBody,
+  type ColumnRenderer,
+  type TableCellProps 
+} from '@conar/table'
+
+function BooleanCell({ value, style }: TableCellProps) {
+  return (
+    <div style={style} className="px-4 py-2">
+      {value ? '✓' : '✗'}
+    </div>
+  )
+}
+
+function NumberCell({ value, style }: TableCellProps) {
+  return (
+    <div style={style} className="px-4 py-2 text-right">
+      {Number(value).toLocaleString()}
+    </div>
+  )
+}
+
+function QueryResultsTable({ results }: { results: any[] }) {
+  const columns: ColumnRenderer[] = useMemo(() => {
+    const firstRow = results[0]
+    if (!firstRow) return []
+    
+    return Object.entries(firstRow).map(([key, value]) => {
+      let cell: ColumnRenderer['cell']
+      
+      if (typeof value === 'boolean') {
+        cell = BooleanCell
+      } else if (typeof value === 'number') {
+        cell = NumberCell
+      }
+      
+      return {
+        id: key,
+        size: 150,
+        cell,
+      }
+    })
+  }, [results])
+  
+  return (
+    <TableProvider rows={results} columns={columns}>
+      <Table className="w-full h-[600px] border">
+        <TableHeader />
+        <TableBody />
+      </Table>
+    </TableProvider>
+  )
+}
+```
+
+## Dependencies
+
+```json
+{
+  "dependencies": {
+    "@conar/shared": "workspace:*",
+    "@conar/ui": "workspace:*",
+    "@fluentui/react-context-selector": "catalog:",
+    "@remixicon/react": "catalog:",
+    "@tanstack/react-virtual": "catalog:",
+    "react": "catalog:"
+  }
+}
+```
+
+## Type Checking
+
+```bash
+cd packages/table
+pnpm run check-types
+```
+
+## Related Packages
+
+<CardGroup cols={2}>
+  <Card title="UI Package" icon="palette" href="/development/packages/ui">
+    Styling and hooks
+  </Card>
+  <Card title="Shared Package" icon="box" href="/development/packages/shared">
+    Common utilities
+  </Card>
+</CardGroup>
