@@ -1,0 +1,124 @@
+{
+  "projectType": "saas",
+  "projectName": "Conar",
+  "projectDescription": "AI-powered database management tool for PostgreSQL, MySQL, MSSQL, and Clickhouse with secure cloud connections.",
+  "theme": "aspen",
+  "primaryColor": "#3b82f6",
+  "lightColor": "#60a5fa",
+  "darkColor": "#1e40af",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "installation"
+            ]
+          },
+          {
+            "group": "Features",
+            "pages": [
+              "features/ai-assistance",
+              "features/database-connections",
+              "features/query-execution",
+              "features/security"
+            ]
+          },
+          {
+            "group": "Database Support",
+            "pages": [
+              "databases/postgresql",
+              "databases/mysql",
+              "databases/mssql",
+              "databases/clickhouse"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/creating-connections",
+              "guides/using-ai-features",
+              "guides/managing-queries",
+              "guides/ssl-certificates"
+            ]
+          },
+          {
+            "group": "Account & Billing",
+            "pages": [
+              "account/subscription-plans",
+              "account/authentication",
+              "account/security"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Development",
+        "groups": [
+          {
+            "group": "Contributing",
+            "pages": [
+              "development/overview",
+              "development/setup",
+              "development/architecture",
+              "development/testing"
+            ]
+          },
+          {
+            "group": "Packages",
+            "pages": [
+              "development/packages/connection",
+              "development/packages/shared",
+              "development/packages/table",
+              "development/packages/ui"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "api/introduction",
+              "api/authentication"
+            ]
+          },
+          {
+            "group": "Endpoints",
+            "pages": [
+              "api/connections",
+              "api/queries",
+              "api/chats",
+              "api/ai"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "AI-powered SQL query assistance and optimization",
+    "Multi-database support (PostgreSQL, MySQL, MSSQL, Clickhouse)",
+    "Secure encrypted connection strings with password protection",
+    "Desktop and web applications with cross-platform support",
+    "Real-time query execution and result visualization",
+    "Subscription-based billing with Stripe integration",
+    "Open-source codebase with active development"
+  ],
+  "publicApiSurface": [
+    "/rpc/connections - Database connection management",
+    "/rpc/queries - SQL query execution and history",
+    "/rpc/chats - AI chat interface for SQL assistance",
+    "/rpc/ai - AI model configuration and interactions",
+    "/rpc/account - User account and subscription management",
+    "/auth/* - Better Auth authentication endpoints",
+    "parseConnectionString() - Connection string parser utility",
+    "readSslFiles() - SSL certificate reader utility"
+  ]
+}
